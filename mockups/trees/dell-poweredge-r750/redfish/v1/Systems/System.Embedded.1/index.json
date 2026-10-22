@@ -1,0 +1,75 @@
+{
+  "@odata.id": "/redfish/v1/Systems/System.Embedded.1",
+  "@odata.type": "#ComputerSystem.v1_20_0.ComputerSystem",
+  "Id": "System.Embedded.1",
+  "Name": "System",
+  "SystemType": "Physical",
+  "Manufacturer": "Dell Inc.",
+  "Model": "PowerEdge R750",
+  "SKU": "JQGQVYQ",
+  "SerialNumber": "CNIVC00ZJHQV9GTZ",
+  "HostName": "esx9001.gcc.local",
+  "UUID": "52f0ae33-e9be-289d-5880-cc0ca73279dd",
+  "AssetTag": "",
+  "PowerState": "On",
+  "BiosVersion": "1.15.2",
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK",
+    "HealthRollup": "OK"
+  },
+  "ProcessorSummary": {
+    "Count": 2,
+    "Model": "Intel(R) Xeon(R) Gold 6338 CPU @ 2.00GHz",
+    "Status": {
+      "State": "Enabled",
+      "Health": "OK",
+      "HealthRollup": "OK"
+    }
+  },
+  "MemorySummary": {
+    "TotalSystemMemoryGiB": 512,
+    "Status": {
+      "State": "Enabled",
+      "Health": "OK",
+      "HealthRollup": "OK"
+    }
+  },
+  "Processors": {
+    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Processors"
+  },
+  "Memory": {
+    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Memory"
+  },
+  "Storage": {
+    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Storage"
+  },
+  "EthernetInterfaces": {
+    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/EthernetInterfaces"
+  },
+  "LogServices": {
+    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/LogServices"
+  },
+  "Links": {
+    "Chassis": [
+      {
+        "@odata.id": "/redfish/v1/Chassis/System.Embedded.1"
+      }
+    ],
+    "ManagedBy": [
+      {
+        "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+      }
+    ]
+  },
+  "Oem": {
+    "Dell": {
+      "DellSystem": {
+        "@odata.type": "#DellSystem.v1_4_0.DellSystem",
+        "ChassisServiceTag": "JQGQVYQ",
+        "NodeID": "JQGQVYQ",
+        "SystemGeneration": "15G Monolithic"
+      }
+    }
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "@odata.id": "/redfish/v1/Chassis/1/PowerSubsystem",
+  "@odata.type": "#PowerSubsystem.v1_1_1.PowerSubsystem",
+  "Id": "PowerSubsystem",
+  "Name": "Power Subsystem",
+  "CapacityWatts": 1100,
+  "Allocation": {
+    "RequestedWatts": 340,
+    "AllocatedWatts": 1100
+  },
+  "PowerSupplies": {
+    "@odata.id": "/redfish/v1/Chassis/1/PowerSubsystem/PowerSupplies"
+  },
+  "PowerSupplyRedundancy": [
+    {
+      "RedundancyType": "Failover",
+      "MaxSupportedInGroup": 2,
+      "MinNeededInGroup": 1,
+      "RedundancyGroup": [
+        {
+          "@odata.id": "/redfish/v1/Chassis/1/PowerSubsystem/PowerSupplies/1"
+        },
+        {
+          "@odata.id": "/redfish/v1/Chassis/1/PowerSubsystem/PowerSupplies/2"
+        }
+      ],
+      "Status": {
+        "State": "Enabled",
+        "Health": "OK"
+      }
+    }
+  ],
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK",
+    "HealthRollup": "OK"
+  }
+}

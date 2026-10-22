@@ -1,0 +1,14 @@
+{
+  "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/PS1InputVoltage",
+  "@odata.type": "#Sensor.v1_8_1.Sensor",
+  "Id": "PS1InputVoltage",
+  "Name": "PS1 Input Voltage",
+  "ReadingType": "Voltage",
+  "ReadingUnits": "V",
+  "Reading": 231.0,
+  "PhysicalContext": "PowerSupply",
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK"
+  }
+}

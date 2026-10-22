@@ -1,0 +1,48 @@
+{
+  "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/ThermalSubsystem",
+  "@odata.type": "#ThermalSubsystem.v1_3_1.ThermalSubsystem",
+  "Id": "ThermalSubsystem",
+  "Name": "Thermal Subsystem",
+  "Fans": {
+    "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/ThermalSubsystem/Fans"
+  },
+  "ThermalMetrics": {
+    "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/ThermalSubsystem/ThermalMetrics"
+  },
+  "FanRedundancy": [
+    {
+      "RedundancyType": "NPlusM",
+      "MaxSupportedInGroup": 6,
+      "MinNeededInGroup": 5,
+      "RedundancyGroup": [
+        {
+          "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/ThermalSubsystem/Fans/Fan.Embedded.1A"
+        },
+        {
+          "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/ThermalSubsystem/Fans/Fan.Embedded.2A"
+        },
+        {
+          "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/ThermalSubsystem/Fans/Fan.Embedded.3A"
+        },
+        {
+          "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/ThermalSubsystem/Fans/Fan.Embedded.4A"
+        },
+        {
+          "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/ThermalSubsystem/Fans/Fan.Embedded.5A"
+        },
+        {
+          "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/ThermalSubsystem/Fans/Fan.Embedded.6A"
+        }
+      ],
+      "Status": {
+        "State": "Enabled",
+        "Health": "OK"
+      }
+    }
+  ],
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK",
+    "HealthRollup": "OK"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Memory/DIMM.Socket.A7",
+  "@odata.type": "#Memory.v1_17_0.Memory",
+  "Id": "DIMM.Socket.A7",
+  "Name": "DIMM A7",
+  "DeviceLocator": "DIMM.Socket.A7",
+  "CapacityMiB": 32768,
+  "Manufacturer": "Hynix Semiconductor",
+  "PartNumber": "HMA84GR7DJR4N-XN",
+  "SerialNumber": "D83A64A2",
+  "OperatingSpeedMhz": 3200,
+  "MemoryDeviceType": "DDR4",
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK"
+  }
+}

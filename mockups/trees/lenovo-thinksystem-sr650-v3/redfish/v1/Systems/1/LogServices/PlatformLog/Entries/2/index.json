@@ -1,0 +1,11 @@
+{
+  "@odata.id": "/redfish/v1/Systems/1/LogServices/PlatformLog/Entries/2",
+  "@odata.type": "#LogEntry.v1_15_0.LogEntry",
+  "Id": "2",
+  "Name": "Log Entry 2",
+  "Created": "2026-10-01T08:00:00+00:00",
+  "EntryType": "Event",
+  "Severity": "OK",
+  "Message": "System inventory collection completed.",
+  "MessageId": "FQXSPSE4038I"
+}

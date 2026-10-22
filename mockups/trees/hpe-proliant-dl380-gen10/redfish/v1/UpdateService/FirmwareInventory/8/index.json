@@ -1,0 +1,12 @@
+{
+  "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/8",
+  "@odata.type": "#SoftwareInventory.v1_10_0.SoftwareInventory",
+  "Id": "8",
+  "Name": "HPE Ethernet 10Gb 2-port 562FLR-SFP+ Adpt",
+  "Version": "1.3016.0",
+  "Updateable": true,
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK"
+  }
+}

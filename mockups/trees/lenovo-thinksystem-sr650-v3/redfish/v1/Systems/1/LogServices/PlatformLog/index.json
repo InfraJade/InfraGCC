@@ -1,0 +1,13 @@
+{
+  "@odata.id": "/redfish/v1/Systems/1/LogServices/PlatformLog",
+  "@odata.type": "#LogService.v1_5_0.LogService",
+  "Id": "PlatformLog",
+  "Name": "Platform Event Log",
+  "LogEntryType": "Event",
+  "MaxNumberOfRecords": 1024,
+  "OverWritePolicy": "WrapsWhenFull",
+  "ServiceEnabled": true,
+  "Entries": {
+    "@odata.id": "/redfish/v1/Systems/1/LogServices/PlatformLog/Entries"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "@odata.id": "/redfish/v1/Systems/1/EthernetInterfaces/NIC4",
+  "@odata.type": "#EthernetInterface.v1_9_0.EthernetInterface",
+  "Id": "NIC4",
+  "Name": "Broadcom 57414 Port 4",
+  "MACAddress": "08:94:EF:02:32:B4",
+  "PermanentMACAddress": "08:94:EF:02:32:B4",
+  "SpeedMbps": 0,
+  "LinkStatus": "LinkDown",
+  "InterfaceEnabled": true,
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK"
+  },
+  "IPv4Addresses": []
+}

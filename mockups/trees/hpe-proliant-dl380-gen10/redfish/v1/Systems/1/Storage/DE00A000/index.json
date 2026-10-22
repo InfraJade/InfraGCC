@@ -1,0 +1,42 @@
+{
+  "@odata.id": "/redfish/v1/Systems/1/Storage/DE00A000",
+  "@odata.type": "#Storage.v1_15_0.Storage",
+  "Id": "DE00A000",
+  "Name": "HPE Smart Array P408i-a SR Gen10",
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK",
+    "HealthRollup": "OK"
+  },
+  "StorageControllers": [
+    {
+      "@odata.id": "/redfish/v1/Systems/1/Storage/DE00A000#/StorageControllers/0",
+      "MemberId": "0",
+      "Name": "HPE Smart Array P408i-a SR Gen10",
+      "Model": "HPE Smart Array P408i-a SR Gen10",
+      "FirmwareVersion": "7.43",
+      "Status": {
+        "State": "Enabled",
+        "Health": "OK"
+      }
+    }
+  ],
+  "Drives": [
+    {
+      "@odata.id": "/redfish/v1/Systems/1/Storage/DE00A000/Drives/0"
+    },
+    {
+      "@odata.id": "/redfish/v1/Systems/1/Storage/DE00A000/Drives/1"
+    },
+    {
+      "@odata.id": "/redfish/v1/Systems/1/Storage/DE00A000/Drives/2"
+    },
+    {
+      "@odata.id": "/redfish/v1/Systems/1/Storage/DE00A000/Drives/3"
+    }
+  ],
+  "Drives@odata.count": 4,
+  "Volumes": {
+    "@odata.id": "/redfish/v1/Systems/1/Storage/DE00A000/Volumes"
+  }
+}

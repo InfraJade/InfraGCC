@@ -1,0 +1,22 @@
+{
+  "@odata.id": "/redfish/v1/Chassis/1/Sensors/CPU2_Temp",
+  "@odata.type": "#Sensor.v1_8_1.Sensor",
+  "Id": "CPU2_Temp",
+  "Name": "CPU 2 Temp",
+  "ReadingType": "Temperature",
+  "ReadingUnits": "Cel",
+  "Reading": 49.0,
+  "PhysicalContext": "CPU",
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK"
+  },
+  "Thresholds": {
+    "UpperCaution": {
+      "Reading": 90.0
+    },
+    "UpperCritical": {
+      "Reading": 95.0
+    }
+  }
+}

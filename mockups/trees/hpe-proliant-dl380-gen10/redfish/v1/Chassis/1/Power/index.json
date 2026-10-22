@@ -1,0 +1,95 @@
+{
+  "@odata.id": "/redfish/v1/Chassis/1/Power",
+  "@odata.type": "#Power.v1_6_0.Power",
+  "Id": "Power",
+  "Name": "Power",
+  "PowerControl": [
+    {
+      "@odata.id": "/redfish/v1/Chassis/1/Power#/PowerControl/0",
+      "MemberId": "0",
+      "Name": "System Power Control",
+      "PowerConsumedWatts": 280,
+      "PowerCapacityWatts": 800,
+      "PowerLimit": {
+        "LimitInWatts": null,
+        "LimitException": "NoAction"
+      },
+      "PowerMetrics": {
+        "IntervalInMin": 60,
+        "AverageConsumedWatts": 280
+      }
+    }
+  ],
+  "PowerSupplies": [
+    {
+      "@odata.id": "/redfish/v1/Chassis/1/Power#/PowerSupplies/0",
+      "MemberId": "0",
+      "Name": "HpeServerPowerSupply",
+      "Model": "865414-B21",
+      "SerialNumber": "5WBXK0BLCVPQFH",
+      "FirmwareVersion": "1.00",
+      "PowerCapacityWatts": 800,
+      "LineInputVoltage": 230,
+      "LineInputVoltageType": "ACMidLine",
+      "PowerOutputWatts": 0,
+      "Status": {
+        "State": "Enabled",
+        "Health": "OK"
+      },
+      "Oem": {
+        "Hpe": {
+          "BayNumber": 1,
+          "PowerSupplyStatus": {
+            "State": "Ok"
+          }
+        }
+      }
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/1/Power#/PowerSupplies/1",
+      "MemberId": "1",
+      "Name": "HpeServerPowerSupply",
+      "Model": "865414-B21",
+      "SerialNumber": "5WBXK0AXP6TTJU",
+      "FirmwareVersion": "1.00",
+      "PowerCapacityWatts": 800,
+      "LineInputVoltage": 230,
+      "LineInputVoltageType": "ACMidLine",
+      "PowerOutputWatts": 0,
+      "Status": {
+        "State": "Enabled",
+        "Health": "OK"
+      },
+      "Oem": {
+        "Hpe": {
+          "BayNumber": 2,
+          "PowerSupplyStatus": {
+            "State": "Ok"
+          }
+        }
+      }
+    }
+  ],
+  "Redundancy": [
+    {
+      "@odata.id": "/redfish/v1/Chassis/1/Power#/Redundancy/0",
+      "MemberId": "0",
+      "Name": "System Board PS Redundancy",
+      "Mode": "Failover",
+      "MinNumNeeded": 1,
+      "MaxNumSupported": 2,
+      "RedundancySet": [
+        {
+          "@odata.id": "/redfish/v1/Chassis/1/Power#/PowerSupplies/0"
+        },
+        {
+          "@odata.id": "/redfish/v1/Chassis/1/Power#/PowerSupplies/1"
+        }
+      ],
+      "Status": {
+        "State": "Enabled",
+        "Health": "OK"
+      }
+    }
+  ]
+}

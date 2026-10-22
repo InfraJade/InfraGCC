@@ -1,0 +1,50 @@
+[project]
+name = "gcc-redfish-sim"
+version = "1.0.0"
+description = "Vendor-style Redfish mockup trees (Dell, HPE, Lenovo) and a dynamic multi-BMC simulator"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "aiohttp>=3.11.11",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.4",
+    "pytest-asyncio>=0.25.0",
+    "ruff>=0.8.4",
+    "mypy>=1.14.0",
+]
+
+[project.scripts]
+gcc-generate-mockups = "gcc_redfish_sim.generate:main"
+gcc-bmc-simulator = "gcc_redfish_sim.simulator.app:main"
+
+[build-system]
+requires = ["hatchling>=1.26"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/gcc_redfish_sim"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+extend-exclude = ["trees"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "ASYNC", "S", "RUF", "PTH", "C4", "PIE", "RET"]
+ignore = ["S101", "S311", "RUF012"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S105", "S106"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unreachable = true
+files = ["src", "tests"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]

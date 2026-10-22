@@ -1,0 +1,22 @@
+{
+  "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/DIMMA1Temp",
+  "@odata.type": "#Sensor.v1_8_1.Sensor",
+  "Id": "DIMMA1Temp",
+  "Name": "DIMM A1 Temp",
+  "ReadingType": "Temperature",
+  "ReadingUnits": "Cel",
+  "Reading": 38.0,
+  "PhysicalContext": "Memory",
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK"
+  },
+  "Thresholds": {
+    "UpperCaution": {
+      "Reading": 85.0
+    },
+    "UpperCritical": {
+      "Reading": 90.0
+    }
+  }
+}

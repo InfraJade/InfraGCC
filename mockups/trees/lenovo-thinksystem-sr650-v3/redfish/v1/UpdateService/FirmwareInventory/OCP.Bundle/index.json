@@ -1,0 +1,12 @@
+{
+  "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/OCP.Bundle",
+  "@odata.type": "#SoftwareInventory.v1_10_0.SoftwareInventory",
+  "Id": "OCP.Bundle",
+  "Name": "Broadcom 57414 10/25GbE SFP28 2-port OCP Ethernet Adapter",
+  "Version": "229.1.123.0",
+  "Updateable": true,
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK"
+  }
+}

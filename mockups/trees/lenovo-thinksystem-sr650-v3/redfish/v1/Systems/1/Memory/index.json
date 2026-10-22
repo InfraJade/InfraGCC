@@ -1,0 +1,56 @@
+{
+  "@odata.id": "/redfish/v1/Systems/1/Memory",
+  "@odata.type": "##MemoryCollection.MemoryCollectionCollection.#MemoryCollection.MemoryCollectionCollection",
+  "Name": "Memory Collection",
+  "Members": [
+    {
+      "@odata.id": "/redfish/v1/Systems/1/Memory/1"
+    },
+    {
+      "@odata.id": "/redfish/v1/Systems/1/Memory/3"
+    },
+    {
+      "@odata.id": "/redfish/v1/Systems/1/Memory/5"
+    },
+    {
+      "@odata.id": "/redfish/v1/Systems/1/Memory/7"
+    },
+    {
+      "@odata.id": "/redfish/v1/Systems/1/Memory/10"
+    },
+    {
+      "@odata.id": "/redfish/v1/Systems/1/Memory/12"
+    },
+    {
+      "@odata.id": "/redfish/v1/Systems/1/Memory/14"
+    },
+    {
+      "@odata.id": "/redfish/v1/Systems/1/Memory/16"
+    },
+    {
+      "@odata.id": "/redfish/v1/Systems/1/Memory/17"
+    },
+    {
+      "@odata.id": "/redfish/v1/Systems/1/Memory/19"
+    },
+    {
+      "@odata.id": "/redfish/v1/Systems/1/Memory/21"
+    },
+    {
+      "@odata.id": "/redfish/v1/Systems/1/Memory/23"
+    },
+    {
+      "@odata.id": "/redfish/v1/Systems/1/Memory/26"
+    },
+    {
+      "@odata.id": "/redfish/v1/Systems/1/Memory/28"
+    },
+    {
+      "@odata.id": "/redfish/v1/Systems/1/Memory/30"
+    },
+    {
+      "@odata.id": "/redfish/v1/Systems/1/Memory/32"
+    }
+  ],
+  "Members@odata.count": 16
+}

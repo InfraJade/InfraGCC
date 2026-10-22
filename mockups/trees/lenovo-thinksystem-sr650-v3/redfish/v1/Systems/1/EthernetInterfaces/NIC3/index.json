@@ -1,0 +1,16 @@
+{
+  "@odata.id": "/redfish/v1/Systems/1/EthernetInterfaces/NIC3",
+  "@odata.type": "#EthernetInterface.v1_9_0.EthernetInterface",
+  "Id": "NIC3",
+  "Name": "Broadcom 57414 Port 3",
+  "MACAddress": "08:94:EF:02:32:B3",
+  "PermanentMACAddress": "08:94:EF:02:32:B3",
+  "SpeedMbps": 0,
+  "LinkStatus": "LinkDown",
+  "InterfaceEnabled": true,
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK"
+  },
+  "IPv4Addresses": []
+}

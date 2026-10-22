@@ -1,0 +1,14 @@
+{
+  "@odata.id": "/redfish/v1/Chassis",
+  "@odata.type": "##ChassisCollection.ChassisCollectionCollection.#ChassisCollection.ChassisCollectionCollection",
+  "Name": "Chassis Collection",
+  "Members": [
+    {
+      "@odata.id": "/redfish/v1/Chassis/System.Embedded.1"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/Enclosure.Internal.0-1"
+    }
+  ],
+  "Members@odata.count": 2
+}

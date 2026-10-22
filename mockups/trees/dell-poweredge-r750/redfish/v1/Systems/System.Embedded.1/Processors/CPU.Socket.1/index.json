@@ -1,0 +1,18 @@
+{
+  "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Processors/CPU.Socket.1",
+  "@odata.type": "#Processor.v1_18_0.Processor",
+  "Id": "CPU.Socket.1",
+  "Name": "CPU 1",
+  "Socket": "CPU.Socket.1",
+  "ProcessorType": "CPU",
+  "ProcessorArchitecture": "x86",
+  "Manufacturer": "Intel(R) Corporation",
+  "Model": "Intel(R) Xeon(R) Gold 6338 CPU @ 2.00GHz",
+  "TotalCores": 32,
+  "TotalThreads": 64,
+  "MaxSpeedMHz": 2000,
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK"
+  }
+}

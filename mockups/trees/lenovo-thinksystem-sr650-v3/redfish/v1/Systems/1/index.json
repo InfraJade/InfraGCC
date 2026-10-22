@@ -1,0 +1,71 @@
+{
+  "@odata.id": "/redfish/v1/Systems/1",
+  "@odata.type": "#ComputerSystem.v1_20_0.ComputerSystem",
+  "Id": "1",
+  "Name": "System",
+  "SystemType": "Physical",
+  "Manufacturer": "Lenovo",
+  "Model": "ThinkSystem SR650 V3",
+  "SKU": "7D76CTO1WW",
+  "SerialNumber": "J30D58NL",
+  "HostName": "esx9003.gcc.local",
+  "UUID": "0ae6e649-824a-8a07-075a-5f20180ad1f7",
+  "AssetTag": "",
+  "PowerState": "On",
+  "BiosVersion": "ESE124B-3.10",
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK",
+    "HealthRollup": "OK"
+  },
+  "ProcessorSummary": {
+    "Count": 2,
+    "Model": "Intel(R) Xeon(R) Gold 6430",
+    "Status": {
+      "State": "Enabled",
+      "Health": "OK",
+      "HealthRollup": "OK"
+    }
+  },
+  "MemorySummary": {
+    "TotalSystemMemoryGiB": 1024,
+    "Status": {
+      "State": "Enabled",
+      "Health": "OK",
+      "HealthRollup": "OK"
+    }
+  },
+  "Processors": {
+    "@odata.id": "/redfish/v1/Systems/1/Processors"
+  },
+  "Memory": {
+    "@odata.id": "/redfish/v1/Systems/1/Memory"
+  },
+  "Storage": {
+    "@odata.id": "/redfish/v1/Systems/1/Storage"
+  },
+  "EthernetInterfaces": {
+    "@odata.id": "/redfish/v1/Systems/1/EthernetInterfaces"
+  },
+  "LogServices": {
+    "@odata.id": "/redfish/v1/Systems/1/LogServices"
+  },
+  "Links": {
+    "Chassis": [
+      {
+        "@odata.id": "/redfish/v1/Chassis/1"
+      }
+    ],
+    "ManagedBy": [
+      {
+        "@odata.id": "/redfish/v1/Managers/1"
+      }
+    ]
+  },
+  "Oem": {
+    "Lenovo": {
+      "@odata.type": "#LenovoComputerSystem.v1_0_0.LenovoSystemProperties",
+      "FrontPanelUSB": {}
+    }
+  }
+}

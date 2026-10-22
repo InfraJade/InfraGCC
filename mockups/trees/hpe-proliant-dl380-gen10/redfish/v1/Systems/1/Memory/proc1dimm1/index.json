@@ -1,0 +1,17 @@
+{
+  "@odata.id": "/redfish/v1/Systems/1/Memory/proc1dimm1",
+  "@odata.type": "#Memory.v1_17_0.Memory",
+  "Id": "proc1dimm1",
+  "Name": "PROC 1 DIMM 1",
+  "DeviceLocator": "PROC 1 DIMM 1",
+  "CapacityMiB": 32768,
+  "Manufacturer": "HPE",
+  "PartNumber": "P00924-B21",
+  "SerialNumber": "93F6B28C",
+  "OperatingSpeedMhz": 2933,
+  "MemoryDeviceType": "DDR4",
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK"
+  }
+}

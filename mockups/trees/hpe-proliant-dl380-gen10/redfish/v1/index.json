@@ -1,0 +1,43 @@
+{
+  "@odata.id": "/redfish/v1",
+  "@odata.type": "#ServiceRoot.v1_15_0.ServiceRoot",
+  "Id": "RootService",
+  "Name": "Root Service",
+  "RedfishVersion": "1.17.0",
+  "UUID": "87c37fde-4735-77fb-b4dc-c2ca27982a2a",
+  "Vendor": "HPE",
+  "Product": "ProLiant",
+  "Systems": {
+    "@odata.id": "/redfish/v1/Systems"
+  },
+  "Chassis": {
+    "@odata.id": "/redfish/v1/Chassis"
+  },
+  "Managers": {
+    "@odata.id": "/redfish/v1/Managers"
+  },
+  "SessionService": {
+    "@odata.id": "/redfish/v1/SessionService"
+  },
+  "AccountService": {
+    "@odata.id": "/redfish/v1/AccountService"
+  },
+  "UpdateService": {
+    "@odata.id": "/redfish/v1/UpdateService"
+  },
+  "Links": {
+    "Sessions": {
+      "@odata.id": "/redfish/v1/SessionService/Sessions"
+    }
+  },
+  "Oem": {
+    "Hpe": {
+      "Manager": [
+        {
+          "ManagerType": "iLO 5",
+          "ManagerFirmwareVersion": "3.08"
+        }
+      ]
+    }
+  }
+}

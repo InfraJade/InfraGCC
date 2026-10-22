@@ -1,0 +1,17 @@
+{
+  "@odata.id": "/redfish/v1/Systems/1/Memory/30",
+  "@odata.type": "#Memory.v1_17_0.Memory",
+  "Id": "30",
+  "Name": "DIMM 30",
+  "DeviceLocator": "DIMM 30",
+  "CapacityMiB": 65536,
+  "Manufacturer": "Samsung",
+  "PartNumber": "M321R8GA0BB0-CQK",
+  "SerialNumber": "C18EDA2E",
+  "OperatingSpeedMhz": 4400,
+  "MemoryDeviceType": "DDR5",
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK"
+  }
+}

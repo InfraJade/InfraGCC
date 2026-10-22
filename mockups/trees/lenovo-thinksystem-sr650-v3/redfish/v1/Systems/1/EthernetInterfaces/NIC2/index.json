@@ -1,0 +1,16 @@
+{
+  "@odata.id": "/redfish/v1/Systems/1/EthernetInterfaces/NIC2",
+  "@odata.type": "#EthernetInterface.v1_9_0.EthernetInterface",
+  "Id": "NIC2",
+  "Name": "Broadcom 57414 Port 2",
+  "MACAddress": "08:94:EF:02:32:B2",
+  "PermanentMACAddress": "08:94:EF:02:32:B2",
+  "SpeedMbps": 25000,
+  "LinkStatus": "LinkUp",
+  "InterfaceEnabled": true,
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK"
+  },
+  "IPv4Addresses": []
+}

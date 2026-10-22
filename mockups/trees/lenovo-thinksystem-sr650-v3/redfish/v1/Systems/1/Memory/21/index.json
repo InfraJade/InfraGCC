@@ -1,0 +1,17 @@
+{
+  "@odata.id": "/redfish/v1/Systems/1/Memory/21",
+  "@odata.type": "#Memory.v1_17_0.Memory",
+  "Id": "21",
+  "Name": "DIMM 21",
+  "DeviceLocator": "DIMM 21",
+  "CapacityMiB": 65536,
+  "Manufacturer": "Samsung",
+  "PartNumber": "M321R8GA0BB0-CQK",
+  "SerialNumber": "A2D7CA71",
+  "OperatingSpeedMhz": 4400,
+  "MemoryDeviceType": "DDR5",
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK"
+  }
+}

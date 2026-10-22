@@ -1,0 +1,53 @@
+{
+  "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors",
+  "@odata.type": "##SensorCollection.SensorCollectionCollection.#SensorCollection.SensorCollectionCollection",
+  "Name": "Sensor Collection",
+  "Members": [
+    {
+      "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/SystemBoardInletTemp"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/SystemBoardExhaustTemp"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/CPU1Temp"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/CPU2Temp"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/DIMMA1Temp"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/DIMMB1Temp"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/FanEmbedded1ASpeed"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/FanEmbedded2ASpeed"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/FanEmbedded3ASpeed"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/FanEmbedded4ASpeed"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/FanEmbedded5ASpeed"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/FanEmbedded6ASpeed"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/TotalPower"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/PS1InputVoltage"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/PS2InputVoltage"
+    }
+  ],
+  "Members@odata.count": 15
+}

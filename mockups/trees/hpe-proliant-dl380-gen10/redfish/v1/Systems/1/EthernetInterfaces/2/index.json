@@ -1,0 +1,16 @@
+{
+  "@odata.id": "/redfish/v1/Systems/1/EthernetInterfaces/2",
+  "@odata.type": "#EthernetInterface.v1_9_0.EthernetInterface",
+  "Id": "2",
+  "Name": "NIC 2",
+  "MACAddress": "94:40:C9:02:32:A2",
+  "PermanentMACAddress": "94:40:C9:02:32:A2",
+  "SpeedMbps": 10000,
+  "LinkStatus": "LinkUp",
+  "InterfaceEnabled": true,
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK"
+  },
+  "IPv4Addresses": []
+}

@@ -1,0 +1,11 @@
+{
+  "@odata.id": "/redfish/v1/Systems/1/LogServices/IML/Entries/1",
+  "@odata.type": "#LogEntry.v1_15_0.LogEntry",
+  "Id": "1",
+  "Name": "Log Entry 1",
+  "Created": "2026-10-01T08:00:00+00:00",
+  "EntryType": "Oem",
+  "Severity": "OK",
+  "Message": "IML Cleared (iLO 5 user:Administrator)",
+  "MessageId": "IML.0.0.IMLCleared"
+}

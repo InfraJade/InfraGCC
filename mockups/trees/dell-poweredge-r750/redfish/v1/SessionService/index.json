@@ -1,0 +1,11 @@
+{
+  "@odata.id": "/redfish/v1/SessionService",
+  "@odata.type": "#SessionService.v1_1_9.SessionService",
+  "Id": "SessionService",
+  "Name": "Session Service",
+  "ServiceEnabled": true,
+  "SessionTimeout": 1800,
+  "Sessions": {
+    "@odata.id": "/redfish/v1/SessionService/Sessions"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/FanEmbedded3ASpeed",
+  "@odata.type": "#Sensor.v1_8_1.Sensor",
+  "Id": "FanEmbedded3ASpeed",
+  "Name": "System Board Fan3A",
+  "ReadingType": "Rotational",
+  "ReadingUnits": "RPM",
+  "Reading": 6800,
+  "PhysicalContext": "Fan",
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK"
+  },
+  "Thresholds": {
+    "LowerCaution": {
+      "Reading": 960.0
+    },
+    "LowerCritical": {
+      "Reading": 600.0
+    }
+  }
+}

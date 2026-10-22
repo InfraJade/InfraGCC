@@ -1,0 +1,79 @@
+{
+  "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Power",
+  "@odata.type": "#Power.v1_6_0.Power",
+  "Id": "Power",
+  "Name": "Power",
+  "PowerControl": [
+    {
+      "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Power#/PowerControl/0",
+      "MemberId": "0",
+      "Name": "System Power Control",
+      "PowerConsumedWatts": 320,
+      "PowerCapacityWatts": 1400,
+      "PowerLimit": {
+        "LimitInWatts": null,
+        "LimitException": "NoAction"
+      },
+      "PowerMetrics": {
+        "IntervalInMin": 60,
+        "AverageConsumedWatts": 320
+      }
+    }
+  ],
+  "PowerSupplies": [
+    {
+      "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Power#/PowerSupplies/0",
+      "MemberId": "PSU.Slot.1",
+      "Name": "PS1 Status",
+      "Model": "PWR SPLY,1400W,RDNT,LTON",
+      "SerialNumber": "CNLOD00STW5AWX2N",
+      "FirmwareVersion": "00.1D.79",
+      "PowerCapacityWatts": 1400,
+      "LineInputVoltage": 231,
+      "LineInputVoltageType": "ACMidLine",
+      "PowerOutputWatts": 0,
+      "Status": {
+        "State": "Enabled",
+        "Health": "OK"
+      }
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Power#/PowerSupplies/1",
+      "MemberId": "PSU.Slot.2",
+      "Name": "PS2 Status",
+      "Model": "PWR SPLY,1400W,RDNT,LTON",
+      "SerialNumber": "CNLOD00FL5ET6LLX",
+      "FirmwareVersion": "00.1D.79",
+      "PowerCapacityWatts": 1400,
+      "LineInputVoltage": 231,
+      "LineInputVoltageType": "ACMidLine",
+      "PowerOutputWatts": 0,
+      "Status": {
+        "State": "Enabled",
+        "Health": "OK"
+      }
+    }
+  ],
+  "Redundancy": [
+    {
+      "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Power#/Redundancy/0",
+      "MemberId": "0",
+      "Name": "System Board PS Redundancy",
+      "Mode": "Failover",
+      "MinNumNeeded": 1,
+      "MaxNumSupported": 2,
+      "RedundancySet": [
+        {
+          "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Power#/PowerSupplies/0"
+        },
+        {
+          "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Power#/PowerSupplies/1"
+        }
+      ],
+      "Status": {
+        "State": "Enabled",
+        "Health": "OK"
+      }
+    }
+  ]
+}

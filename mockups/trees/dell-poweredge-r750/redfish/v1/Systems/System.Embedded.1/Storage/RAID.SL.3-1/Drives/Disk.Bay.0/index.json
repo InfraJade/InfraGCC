@@ -1,0 +1,23 @@
+{
+  "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Storage/RAID.SL.3-1/Drives/Disk.Bay.0",
+  "@odata.type": "#Drive.v1_17_0.Drive",
+  "Id": "Disk.Bay.0",
+  "Name": "Solid State Disk 0:1:0",
+  "Model": "MZ7L3960HCJR0D3",
+  "SerialNumber": "S6SWD47J71JH",
+  "Revision": "DSG8",
+  "CapacityBytes": 960197124096,
+  "MediaType": "SSD",
+  "Protocol": "SATA",
+  "PredictedMediaLifeLeftPercent": 89.0,
+  "PhysicalLocation": {
+    "PartLocation": {
+      "LocationOrdinalValue": 0,
+      "LocationType": "Bay"
+    }
+  },
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK"
+  }
+}

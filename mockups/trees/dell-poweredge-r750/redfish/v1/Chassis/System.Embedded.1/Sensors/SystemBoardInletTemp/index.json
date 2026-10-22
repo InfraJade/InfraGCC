@@ -1,0 +1,22 @@
+{
+  "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/SystemBoardInletTemp",
+  "@odata.type": "#Sensor.v1_8_1.Sensor",
+  "Id": "SystemBoardInletTemp",
+  "Name": "System Board Inlet Temp",
+  "ReadingType": "Temperature",
+  "ReadingUnits": "Cel",
+  "Reading": 23.0,
+  "PhysicalContext": "Intake",
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK"
+  },
+  "Thresholds": {
+    "UpperCaution": {
+      "Reading": 42.0
+    },
+    "UpperCritical": {
+      "Reading": 47.0
+    }
+  }
+}

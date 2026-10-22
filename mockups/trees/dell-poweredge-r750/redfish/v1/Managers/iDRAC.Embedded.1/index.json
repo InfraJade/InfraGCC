@@ -1,0 +1,33 @@
+{
+  "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1",
+  "@odata.type": "#Manager.v1_17_0.Manager",
+  "Id": "iDRAC.Embedded.1",
+  "Name": "Manager",
+  "ManagerType": "BMC",
+  "Model": "15G Monolithic",
+  "FirmwareVersion": "7.10.70.00",
+  "UUID": "52f0ae33-e9be-289d-5880-cc0ca73279dd",
+  "PowerState": "On",
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK"
+  },
+  "EthernetInterfaces": {
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/EthernetInterfaces"
+  },
+  "LogServices": {
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/LogServices"
+  },
+  "Links": {
+    "ManagerForServers": [
+      {
+        "@odata.id": "/redfish/v1/Systems/System.Embedded.1"
+      }
+    ],
+    "ManagerForChassis": [
+      {
+        "@odata.id": "/redfish/v1/Chassis/System.Embedded.1"
+      }
+    ]
+  }
+}

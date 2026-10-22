@@ -1,0 +1,16 @@
+{
+  "@odata.id": "/redfish/v1/Systems/System.Embedded.1/EthernetInterfaces/NIC.Integrated.1-2-1",
+  "@odata.type": "#EthernetInterface.v1_9_0.EthernetInterface",
+  "Id": "NIC.Integrated.1-2-1",
+  "Name": "Integrated NIC 1 Port 2 Partition 1",
+  "MACAddress": "D0:8E:79:02:32:92",
+  "PermanentMACAddress": "D0:8E:79:02:32:92",
+  "SpeedMbps": 25000,
+  "LinkStatus": "LinkUp",
+  "InterfaceEnabled": true,
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK"
+  },
+  "IPv4Addresses": []
+}

@@ -1,0 +1,13 @@
+{
+  "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/LogServices/Sel",
+  "@odata.type": "#LogService.v1_5_0.LogService",
+  "Id": "Sel",
+  "Name": "SEL Log",
+  "LogEntryType": "SEL",
+  "MaxNumberOfRecords": 1024,
+  "OverWritePolicy": "WrapsWhenFull",
+  "ServiceEnabled": true,
+  "Entries": {
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/LogServices/Sel/Entries"
+  }
+}

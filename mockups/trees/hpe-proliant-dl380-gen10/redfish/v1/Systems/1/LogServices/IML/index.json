@@ -1,0 +1,13 @@
+{
+  "@odata.id": "/redfish/v1/Systems/1/LogServices/IML",
+  "@odata.type": "#LogService.v1_5_0.LogService",
+  "Id": "IML",
+  "Name": "Integrated Management Log",
+  "LogEntryType": "Oem",
+  "MaxNumberOfRecords": 1024,
+  "OverWritePolicy": "WrapsWhenFull",
+  "ServiceEnabled": true,
+  "Entries": {
+    "@odata.id": "/redfish/v1/Systems/1/LogServices/IML/Entries"
+  }
+}

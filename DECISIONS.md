@@ -125,9 +125,12 @@ colours. Replace it with the official asset.
 ## Simulated hardware
 
 **D26. Vendor-style mockups are authored, not copied.** Captured vendor mockups are not reliably available or
-licensed for redistribution. `mockups/generate_mockups.py` writes DMTF-format trees that follow each vendor's
-documented conventions (resource IDs, sensor names, Oem sections, which layout each firmware generation uses).
-The DMTF Redfish Mockup Server serves them unchanged; the dynamic simulator uses them as templates.
+licensed for redistribution. `gcc-generate-mockups` (`mockups/src/gcc_redfish_sim/generate.py`) writes DMTF-format
+trees that follow each vendor's documented conventions (resource IDs, sensor names, Oem sections, which layout each
+firmware generation uses). The DMTF Redfish Mockup Server serves them unchanged; the dynamic simulator uses them as
+templates. Layout split differs from the plan to match real firmware: Dell iDRAC9 serves both the newer
+ThermalSubsystem/PowerSubsystem/Sensors layout and legacy Thermal/Power, HPE iLO 5 legacy only, Lenovo XCC2 newer
+only. The adapter tests still cover legacy-only, newer-only and both.
 
 **D27. One simulator process, one port per virtual BMC.** Redfish links are absolute paths, so BMCs cannot share a
 port behind a path prefix. The simulator listens on `base_port + i` for each BMC; in dev `bmc_host` values look

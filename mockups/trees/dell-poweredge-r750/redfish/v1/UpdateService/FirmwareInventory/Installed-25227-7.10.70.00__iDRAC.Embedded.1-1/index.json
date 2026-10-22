@@ -1,0 +1,12 @@
+{
+  "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/Installed-25227-7.10.70.00__iDRAC.Embedded.1-1",
+  "@odata.type": "#SoftwareInventory.v1_10_0.SoftwareInventory",
+  "Id": "Installed-25227-7.10.70.00__iDRAC.Embedded.1-1",
+  "Name": "Integrated Dell Remote Access Controller",
+  "Version": "7.10.70.00",
+  "Updateable": true,
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK"
+  }
+}

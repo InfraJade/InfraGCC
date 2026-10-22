@@ -1,0 +1,23 @@
+{
+  "@odata.id": "/redfish/v1/Systems/1/Storage/RAID_Slot1/Drives/Disk.1",
+  "@odata.type": "#Drive.v1_17_0.Drive",
+  "Id": "Disk.1",
+  "Name": "Drive 1",
+  "Model": "MZ7L3480HCHQ",
+  "SerialNumber": "S6KATD11JDZZ8",
+  "Revision": "JXTC604Q",
+  "CapacityBytes": 480103981056,
+  "MediaType": "SSD",
+  "Protocol": "SATA",
+  "PredictedMediaLifeLeftPercent": 97.0,
+  "PhysicalLocation": {
+    "PartLocation": {
+      "LocationOrdinalValue": 1,
+      "LocationType": "Bay"
+    }
+  },
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK"
+  }
+}

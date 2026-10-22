@@ -1,0 +1,51 @@
+{
+  "@odata.id": "/redfish/v1",
+  "@odata.type": "#ServiceRoot.v1_15_0.ServiceRoot",
+  "Id": "RootService",
+  "Name": "Root Service",
+  "RedfishVersion": "1.17.0",
+  "UUID": "0ae6e649-824a-8a07-075a-5f20180ad1f7",
+  "Vendor": "Lenovo",
+  "Product": "ThinkSystem",
+  "Systems": {
+    "@odata.id": "/redfish/v1/Systems"
+  },
+  "Chassis": {
+    "@odata.id": "/redfish/v1/Chassis"
+  },
+  "Managers": {
+    "@odata.id": "/redfish/v1/Managers"
+  },
+  "SessionService": {
+    "@odata.id": "/redfish/v1/SessionService"
+  },
+  "AccountService": {
+    "@odata.id": "/redfish/v1/AccountService"
+  },
+  "UpdateService": {
+    "@odata.id": "/redfish/v1/UpdateService"
+  },
+  "Links": {
+    "Sessions": {
+      "@odata.id": "/redfish/v1/SessionService/Sessions"
+    }
+  },
+  "Oem": {
+    "Lenovo": {
+      "MachineType": "7D76",
+      "Product": "ThinkSystem SR650 V3"
+    }
+  },
+  "ProtocolFeaturesSupported": {
+    "ExpandQuery": {
+      "ExpandAll": true,
+      "Levels": true,
+      "Links": true,
+      "MaxLevels": 2,
+      "NoLinks": true
+    },
+    "FilterQuery": false,
+    "SelectQuery": true,
+    "OnlyMemberQuery": true
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/PSU1",
+  "@odata.type": "#SoftwareInventory.v1_10_0.SoftwareInventory",
+  "Id": "PSU1",
+  "Name": "Power Supply 1",
+  "Version": "7.36",
+  "Updateable": true,
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK"
+  }
+}

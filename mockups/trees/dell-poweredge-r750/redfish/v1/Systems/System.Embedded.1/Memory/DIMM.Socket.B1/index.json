@@ -1,0 +1,17 @@
+{
+  "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Memory/DIMM.Socket.B1",
+  "@odata.type": "#Memory.v1_17_0.Memory",
+  "Id": "DIMM.Socket.B1",
+  "Name": "DIMM B1",
+  "DeviceLocator": "DIMM.Socket.B1",
+  "CapacityMiB": 32768,
+  "Manufacturer": "Hynix Semiconductor",
+  "PartNumber": "HMA84GR7DJR4N-XN",
+  "SerialNumber": "DF96D40F",
+  "OperatingSpeedMhz": 3200,
+  "MemoryDeviceType": "DDR4",
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/UEFI",
+  "@odata.type": "#SoftwareInventory.v1_10_0.SoftwareInventory",
+  "Id": "UEFI",
+  "Name": "UEFI",
+  "Version": "ESE124B-3.10",
+  "Updateable": true,
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK"
+  }
+}

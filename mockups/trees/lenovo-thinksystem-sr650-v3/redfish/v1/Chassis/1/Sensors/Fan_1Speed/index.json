@@ -1,0 +1,22 @@
+{
+  "@odata.id": "/redfish/v1/Chassis/1/Sensors/Fan_1Speed",
+  "@odata.type": "#Sensor.v1_8_1.Sensor",
+  "Id": "Fan_1Speed",
+  "Name": "Fan 1 Front Tach",
+  "ReadingType": "Rotational",
+  "ReadingUnits": "RPM",
+  "Reading": 7350,
+  "PhysicalContext": "Fan",
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK"
+  },
+  "Thresholds": {
+    "LowerCaution": {
+      "Reading": 1000.0
+    },
+    "LowerCritical": {
+      "Reading": 500.0
+    }
+  }
+}

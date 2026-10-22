@@ -1,0 +1,35 @@
+{
+  "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory",
+  "@odata.type": "##SoftwareInventoryCollection.SoftwareInventoryCollectionCollection.#SoftwareInventoryCollection.SoftwareInventoryCollectionCollection",
+  "Name": "Firmware Inventory",
+  "Members": [
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/2"
+    },
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/1"
+    },
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/3"
+    },
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/4"
+    },
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/5"
+    },
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/6"
+    },
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/7"
+    },
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/8"
+    },
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/9"
+    }
+  ],
+  "Members@odata.count": 9
+}

@@ -1,0 +1,13 @@
+{
+  "@odata.id": "/redfish/v1/Systems/1/LogServices/AuditLog",
+  "@odata.type": "#LogService.v1_5_0.LogService",
+  "Id": "AuditLog",
+  "Name": "Audit Event Log",
+  "LogEntryType": "Event",
+  "MaxNumberOfRecords": 1024,
+  "OverWritePolicy": "WrapsWhenFull",
+  "ServiceEnabled": true,
+  "Entries": {
+    "@odata.id": "/redfish/v1/Systems/1/LogServices/AuditLog/Entries"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/PowerSubsystem/PowerSupplies/PSU.Slot.1/Metrics",
+  "@odata.type": "#PowerSupplyMetrics.v1_1_1.PowerSupplyMetrics",
+  "Id": "Metrics",
+  "Name": "Metrics for PS1 Status",
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK"
+  },
+  "InputVoltage": {
+    "Reading": 231.0,
+    "DataSourceUri": "/redfish/v1/Chassis/System.Embedded.1/Sensors/PS1InputVoltage"
+  },
+  "OutputPowerWatts": {
+    "Reading": 0.0
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "@odata.id": "/redfish/v1/Systems/1/EthernetInterfaces/4",
+  "@odata.type": "#EthernetInterface.v1_9_0.EthernetInterface",
+  "Id": "4",
+  "Name": "NIC 4",
+  "MACAddress": "94:40:C9:02:32:A4",
+  "PermanentMACAddress": "94:40:C9:02:32:A4",
+  "SpeedMbps": 0,
+  "LinkStatus": "LinkDown",
+  "InterfaceEnabled": true,
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK"
+  },
+  "IPv4Addresses": []
+}

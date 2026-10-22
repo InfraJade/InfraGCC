@@ -1,0 +1,16 @@
+{
+  "@odata.id": "/redfish/v1/Systems/System.Embedded.1/EthernetInterfaces/NIC.Slot.3-2-1",
+  "@odata.type": "#EthernetInterface.v1_9_0.EthernetInterface",
+  "Id": "NIC.Slot.3-2-1",
+  "Name": "NIC in Slot 3 Port 2 Partition 1",
+  "MACAddress": "D0:8E:79:02:32:94",
+  "PermanentMACAddress": "D0:8E:79:02:32:94",
+  "SpeedMbps": 0,
+  "LinkStatus": "LinkDown",
+  "InterfaceEnabled": true,
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK"
+  },
+  "IPv4Addresses": []
+}

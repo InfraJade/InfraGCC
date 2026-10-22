@@ -1,0 +1,20 @@
+{
+  "@odata.id": "/redfish/v1/Systems/System.Embedded.1/EthernetInterfaces",
+  "@odata.type": "##EthernetInterfaceCollection.EthernetInterfaceCollectionCollection.#EthernetInterfaceCollection.EthernetInterfaceCollectionCollection",
+  "Name": "System Ethernet Interface Collection",
+  "Members": [
+    {
+      "@odata.id": "/redfish/v1/Systems/System.Embedded.1/EthernetInterfaces/NIC.Integrated.1-1-1"
+    },
+    {
+      "@odata.id": "/redfish/v1/Systems/System.Embedded.1/EthernetInterfaces/NIC.Integrated.1-2-1"
+    },
+    {
+      "@odata.id": "/redfish/v1/Systems/System.Embedded.1/EthernetInterfaces/NIC.Slot.3-1-1"
+    },
+    {
+      "@odata.id": "/redfish/v1/Systems/System.Embedded.1/EthernetInterfaces/NIC.Slot.3-2-1"
+    }
+  ],
+  "Members@odata.count": 4
+}

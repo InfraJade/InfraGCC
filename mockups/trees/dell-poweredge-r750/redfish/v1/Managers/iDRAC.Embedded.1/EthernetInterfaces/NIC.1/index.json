@@ -1,0 +1,21 @@
+{
+  "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/EthernetInterfaces/NIC.1",
+  "@odata.type": "#EthernetInterface.v1_9_0.EthernetInterface",
+  "Id": "NIC.1",
+  "Name": "Manager Ethernet Interface",
+  "MACAddress": "D0:8E:79:02:32:90",
+  "PermanentMACAddress": "D0:8E:79:02:32:90",
+  "LinkStatus": "LinkUp",
+  "HostName": "bmc-esx9001",
+  "IPv4Addresses": [
+    {
+      "Address": "10.20.45.21",
+      "SubnetMask": "255.255.255.0",
+      "AddressOrigin": "Static"
+    }
+  ],
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK"
+  }
+}

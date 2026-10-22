@@ -1,0 +1,22 @@
+{
+  "@odata.id": "/redfish/v1/Chassis/1/Sensors/Exhaust_Temp",
+  "@odata.type": "#Sensor.v1_8_1.Sensor",
+  "Id": "Exhaust_Temp",
+  "Name": "Exhaust Temp",
+  "ReadingType": "Temperature",
+  "ReadingUnits": "Cel",
+  "Reading": 37.0,
+  "PhysicalContext": "Exhaust",
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK"
+  },
+  "Thresholds": {
+    "UpperCaution": {
+      "Reading": 70.0
+    },
+    "UpperCritical": {
+      "Reading": 75.0
+    }
+  }
+}

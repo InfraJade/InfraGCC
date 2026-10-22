@@ -1,0 +1,27 @@
+{
+  "@odata.id": "/redfish/v1/Chassis/1/PowerSubsystem/PowerSupplies/2",
+  "@odata.type": "#PowerSupply.v1_5_3.PowerSupply",
+  "Id": "2",
+  "Name": "Power Supply 2",
+  "Model": "SP57A94404",
+  "SerialNumber": "D1DGMX0F0LGF",
+  "FirmwareVersion": "7.36",
+  "PowerCapacityWatts": 1100,
+  "InputNominalVoltageType": "AC200To240V",
+  "LineInputStatus": "Normal",
+  "HotPluggable": true,
+  "Location": {
+    "PartLocation": {
+      "ServiceLabel": "PSU 2",
+      "LocationType": "Bay",
+      "LocationOrdinalValue": 2
+    }
+  },
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK"
+  },
+  "Metrics": {
+    "@odata.id": "/redfish/v1/Chassis/1/PowerSubsystem/PowerSupplies/2/Metrics"
+  }
+}

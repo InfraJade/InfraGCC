@@ -1,0 +1,18 @@
+{
+  "@odata.id": "/redfish/v1/Systems/1/Processors/2",
+  "@odata.type": "#Processor.v1_18_0.Processor",
+  "Id": "2",
+  "Name": "Processors 2",
+  "Socket": "Proc 2",
+  "ProcessorType": "CPU",
+  "ProcessorArchitecture": "x86",
+  "Manufacturer": "Intel(R) Corporation",
+  "Model": "Intel(R) Xeon(R) Gold 6248R CPU @ 3.00GHz",
+  "TotalCores": 24,
+  "TotalThreads": 48,
+  "MaxSpeedMHz": 3000,
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK"
+  }
+}

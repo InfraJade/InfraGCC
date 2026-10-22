@@ -1,0 +1,28 @@
+{
+  "@odata.id": "/redfish/v1/Systems/1/Storage/RAID_Slot1/Volumes/Volume0",
+  "@odata.type": "#Volume.v1_9_0.Volume",
+  "Id": "Volume0",
+  "Name": "Virtual Disk 0",
+  "RAIDType": "RAID10",
+  "CapacityBytes": 960207962112,
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK"
+  },
+  "Links": {
+    "Drives": [
+      {
+        "@odata.id": "/redfish/v1/Systems/1/Storage/RAID_Slot1/Drives/Disk.0"
+      },
+      {
+        "@odata.id": "/redfish/v1/Systems/1/Storage/RAID_Slot1/Drives/Disk.1"
+      },
+      {
+        "@odata.id": "/redfish/v1/Systems/1/Storage/RAID_Slot1/Drives/Disk.2"
+      },
+      {
+        "@odata.id": "/redfish/v1/Systems/1/Storage/RAID_Slot1/Drives/Disk.3"
+      }
+    ]
+  }
+}

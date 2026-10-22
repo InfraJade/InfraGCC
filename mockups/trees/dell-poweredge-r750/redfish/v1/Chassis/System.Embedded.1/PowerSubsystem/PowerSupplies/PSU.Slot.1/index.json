@@ -1,0 +1,27 @@
+{
+  "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/PowerSubsystem/PowerSupplies/PSU.Slot.1",
+  "@odata.type": "#PowerSupply.v1_5_3.PowerSupply",
+  "Id": "PSU.Slot.1",
+  "Name": "PS1 Status",
+  "Model": "PWR SPLY,1400W,RDNT,LTON",
+  "SerialNumber": "CNLOD00STW5AWX2N",
+  "FirmwareVersion": "00.1D.79",
+  "PowerCapacityWatts": 1400,
+  "InputNominalVoltageType": "AC200To240V",
+  "LineInputStatus": "Normal",
+  "HotPluggable": true,
+  "Location": {
+    "PartLocation": {
+      "ServiceLabel": "PSU 1",
+      "LocationType": "Bay",
+      "LocationOrdinalValue": 1
+    }
+  },
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK"
+  },
+  "Metrics": {
+    "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/PowerSubsystem/PowerSupplies/PSU.Slot.1/Metrics"
+  }
+}

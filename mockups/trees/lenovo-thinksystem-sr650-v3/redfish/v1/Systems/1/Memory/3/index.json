@@ -1,0 +1,17 @@
+{
+  "@odata.id": "/redfish/v1/Systems/1/Memory/3",
+  "@odata.type": "#Memory.v1_17_0.Memory",
+  "Id": "3",
+  "Name": "DIMM 3",
+  "DeviceLocator": "DIMM 3",
+  "CapacityMiB": 65536,
+  "Manufacturer": "Samsung",
+  "PartNumber": "M321R8GA0BB0-CQK",
+  "SerialNumber": "BD402112",
+  "OperatingSpeedMhz": 4400,
+  "MemoryDeviceType": "DDR5",
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/Previous-159-1.13.2__BIOS.Setup.1-1",
+  "@odata.type": "#SoftwareInventory.v1_10_0.SoftwareInventory",
+  "Id": "Previous-159-1.13.2__BIOS.Setup.1-1",
+  "Name": "BIOS",
+  "Version": "1.13.2",
+  "Updateable": false,
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK"
+  }
+}
