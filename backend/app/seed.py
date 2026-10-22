@@ -6,7 +6,7 @@
 Servers are onboarded the way an engineer would (BMC address, rack, position, collector). Vendor, model,
 serial and parts are filled in by the collector from the hardware itself.
 
-The simulated fleet layout mirrors mockups/simulator/gcc_simulator/fleet.py: BMC i (1-based) listens on
+The simulated fleet layout mirrors mockups/src/gcc_redfish_sim/catalog.py (FLEET): BMC i (1-based) listens on
 SIM_BASE_PORT + i and runs model SIM_MODELS[(i - 1) % len(SIM_MODELS)].
 """
 
@@ -47,14 +47,14 @@ class SimModel:
     bmc: str
 
 
-# Keep in sync with mockups/simulator/gcc_simulator/catalog.py (approved firmware = the catalog's current).
+# Keep in sync with mockups/src/gcc_redfish_sim/catalog.py (approved firmware = the catalog's current).
 SIM_MODELS: list[SimModel] = [
     SimModel("Dell", "PowerEdge R750", 2, "1.15.2", "7.10.70.00"),
     SimModel("HPE", "ProLiant DL380 Gen10", 2, "U30 v2.96 (06/24/2024)", "3.08"),
-    SimModel("Lenovo", "ThinkSystem SR650", 2, "IVE184E-3.40", "CDI3A6A-9.10"),
+    SimModel("Lenovo", "ThinkSystem SR650 V3", 2, "ESE124B-3.10", "ESX320R-3.30"),
     SimModel("Dell", "PowerEdge R650", 1, "1.15.2", "7.10.70.00"),
     SimModel("HPE", "ProLiant DL360 Gen10", 1, "U32 v2.96 (06/24/2024)", "3.08"),
-    SimModel("Lenovo", "ThinkSystem SR630", 1, "IVE184E-3.40", "CDI3A6A-9.10"),
+    SimModel("Lenovo", "ThinkSystem SR630 V3", 1, "ESE124B-3.10", "ESX320R-3.30"),
 ]
 
 SITES = [

@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "batch_id": "6f1c0c1e-6a55-4f0b-9b8e-2c9a0f2b8f11",
+  "collector": "pnq1-col-a",
+  "sent_at": "2026-10-22T10:00:12Z",
+  "servers": [
+    {
+      "server_id": 1,
+      "polled_at": "2026-10-22T10:00:05Z",
+      "readings": [
+        {"time": "2026-10-22T10:00:01Z", "metric": "inlet_temp_c", "component": "", "value": 22.5, "status": "OK"},
+        {"time": "2026-10-22T10:00:01Z", "metric": "exhaust_temp_c", "component": "", "value": 38.0, "status": "OK"},
+        {"time": "2026-10-22T10:00:01Z", "metric": "cpu_temp_c", "component": "CPU1", "value": 61.0, "status": "OK"},
+        {"time": "2026-10-22T10:00:01Z", "metric": "fan_rpm", "component": "Fan 1", "value": 7440.0, "status": "OK"},
+        {"time": "2026-10-22T10:00:01Z", "metric": "power_w", "component": "", "value": 412.0, "status": null},
+        {"time": "2026-10-22T10:00:01Z", "metric": "psu_input_v", "component": "PSU 1", "value": 231.0, "status": "OK"},
+        {"time": "2026-10-22T10:00:01Z", "metric": "power_state", "component": "", "value": 1, "status": "On"},
+        {"time": "2026-10-22T10:00:01Z", "metric": "system_health", "component": "", "value": 0, "status": "OK"},
+        {"time": "2026-10-22T10:00:01Z", "metric": "bmc_reachable", "component": "", "value": 1, "status": "Reachable"},
+        {"time": "2026-10-22T10:00:01Z", "metric": "psu_health", "component": "PSU 2", "value": 1, "status": "Warning"},
+        {"time": "2026-10-22T10:00:01Z", "metric": "nic_link", "component": "NIC 1", "value": 1, "status": "Up"}
+      ],
+      "bmc_limits": [
+        {"metric": "cpu_temp_c", "component": "CPU1", "lower_critical": null, "lower_warning": null, "upper_warning": 85.0, "upper_critical": 95.0}
+      ],
+      "events": [
+        {"entry_id": "Sel/2", "time": "2026-10-01T08:00:00Z", "severity": "Critical", "message": "The system inlet temperature is greater than the upper critical threshold.", "message_id": "TMP0120"}
+      ],
+      "identity": {
+        "vendor": "Dell", "model": "PowerEdge R750", "serial": "7XK2M93", "sku": "R750",
+        "hostname": "pnq1-a01-r750-01", "uuid": "4c4c4544-0058-4b10-8032-b7c04f4d3933", "asset_tag": null,
+        "bmc_model": "iDRAC9", "bmc_firmware": "7.10.70.00", "bmc_mac": "D0:8E:79:00:00:10",
+        "system_path": "/redfish/v1/Systems/System.Embedded.1", "host_ips": ["10.20.1.11"]
+      },
+      "components": [
+        {"type": "cpu", "name": "CPU1", "model": "Intel(R) Xeon(R) Gold 6338 CPU @ 2.00GHz", "manufacturer": "Intel", "serial": null, "capacity": 32, "capacity_unit": "cores", "firmware_version": null, "location": "CPU.Socket.1", "link_up": null, "extra": {}},
+        {"type": "nic", "name": "NIC 1", "model": "Broadcom BCM57414", "manufacturer": "Broadcom", "serial": null, "capacity": 25000, "capacity_unit": "Mbps", "firmware_version": null, "location": "NIC.Integrated.1-1-1", "link_up": true, "extra": {"mac": "D0:8E:79:00:00:11"}}
+      ],
+      "firmware": [
+        {"component": "BIOS", "component_key": "BIOS", "component_type": "bios", "version": "1.15.2"},
+        {"component": "Integrated Dell Remote Access Controller", "component_key": "BMC", "component_type": "bmc", "version": "7.10.70.00"}
+      ]
+    }
+  ]
+}
