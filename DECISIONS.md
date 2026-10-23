@@ -135,3 +135,53 @@ only. The adapter tests still cover legacy-only, newer-only and both.
 **D27. One simulator process, one port per virtual BMC.** Redfish links are absolute paths, so BMCs cannot share a
 port behind a path prefix. The simulator listens on `base_port + i` for each BMC; in dev `bmc_host` values look
 like `bmc-simulator:20001`, and the scheme defaults to HTTPS unless the host is given as `http://…`.
+
+**D28. Simulator faults are overlays.** Faults are applied on top of the drifting "physics" values, so clearing a
+fault restores the resources exactly; log entries stay as history. One fault of each kind per BMC at a time (409);
+random faults last 5–30 minutes. `inlet_spike` sets inlet to the BMC's upper caution + 1.5 °C (≈ 43–45 °C);
+`bmc_unresponsive` accepts the TCP connection and hangs until cleared. BMC log timestamps carry the site-local
+offset (`+05:30`) as real BMCs do; the collector normalizes them to UTC. `$levels` above a vendor's MaxLevels returns
+400 `QueryParameterOutOfRange` rather than being clamped.
+
+## Collector
+
+**D29. One reading per (metric, component) per poll.** The newer layout is read first; legacy Thermal/Power is
+fetched only for a group the newer layout left empty, so Dell (both layouts) never sends duplicates.
+
+**D30. Vendor naming.** Dell `identity.serial` is the Service Tag; other vendors use `SerialNumber`. HPE DIMMs are
+"PROC 1 DIMM 1" and its memory temperature zones "P1 DIMM 1-6"; a Dell fan's rotor B is "Fan 1B". Drive firmware
+comes from the Drive resources (`DRIVE:<model>`); firmware outside BIOS/BMC/CPLD/PSU/NIC/RAID/drive is `other` keyed
+by its name; staged/backup images are skipped.
+
+**D31. Collector delivery rules.** All log entries are sent on first contact, then only unseen ids (≤ 50 per log per
+poll); ingest ignores duplicates. Ingest 400/413/415/422 drop the batch (it will never succeed); 401/403/5xx and
+network errors keep it buffered in order. Batches hold ≤ 200 servers. The last config is cached on disk so a restart
+during a cloud outage keeps polling.
+
+## Local stack
+
+**D32. Published ports bind to 127.0.0.1** by default (`BIND_ADDRESS` to change). The Keycloak realm is imported once
+(changing it needs `docker compose down -v`). Redis uses `volatile-lru` so only TTL keys can be evicted, never Celery
+queues.
+
+**D33. mTLS identity is a SHA-256 fingerprint computed in njs.** nginx's `$ssl_client_fingerprint` is SHA-1. In the
+mTLS overlay the trusted proxy is a fixed address on a network only nginx and the ingest API join; ingest keeps
+uvicorn's default forwarded-allow-ips so it sees the proxy's real address.
+
+**D34. `gcc-e2e` is a dev-only password-grant client** used by Playwright and the load test; `gcc-web` has no direct
+grants.
+
+## App API
+
+**D35. Cross-site settings need an unrestricted user.** Sites, alert rules, global/model thresholds, all-site routes
+and firmware baselines can only be changed by users with no site limit; the audit log is for unrestricted platform
+admins. Everyone can read rules and thresholds; only platform admins see routes, and only their `target_hint`.
+
+**D36. Alert actions.** Manual resolve is allowed only for event and compliance alerts (409 otherwise); a second ack
+or acting on a resolved alert is 409. DELETE on a server decommissions it (history kept).
+
+**D37. History resolution by range.** Raw readings up to 26 h, 5-minute rollup up to 8 days, hourly beyond, capped at
+about 1500 points. Site power totals and "reporting" counts only use readings under 5 minutes old.
+
+**D38. Onboarding without a collector** picks the least-loaded enabled collector at the server's site; moving a
+server to another site moves its collector assignment too.
