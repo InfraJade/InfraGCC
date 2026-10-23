@@ -1,0 +1,129 @@
+# Overlay: prod-style mutual TLS between the collectors and the ingest API (DECISIONS.md D8).
+#
+#   sh infra/pki/make-ca.sh
+#   for c in pnq1-col-a pnq1-col-b hyd1-col-a; do sh infra/pki/make-collector-cert.sh $c; done
+#   docker compose -f compose.yaml -f infra/compose.mtls.yaml up -d
+#
+# Run from the repo root: paths in this file are relative to the repo root (the first -f file's directory).
+#
+# What changes:
+#   - ingest-mtls (nginx) terminates TLS on :8443 and requires a client certificate signed by infra/pki/out/ca.crt.
+#   - ingest-api switches to INGEST_AUTH_MODE=mtls and trusts identity headers only from ingest-mtls, which has a
+#     fixed address on a private network that nothing else joins.
+#   - collectors send to https://ingest-mtls:8443 with their own certificate (no shared token).
+#   - mtls-register (one-shot) stores each collector certificate's SHA-256 fingerprint in
+#     collectors.cert_fingerprint, as an admin would via Admin -> Collectors.
+
+services:
+  ingest-mtls:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    volumes:
+      - ./infra/nginx/ingest-mtls.conf:/etc/nginx/nginx.conf:ro
+      - ./infra/nginx/cert_fingerprint.js:/etc/nginx/njs/cert_fingerprint.js:ro
+      - ./infra/pki/out:/etc/nginx/pki:ro
+    ports:
+      - "${BIND_ADDRESS:-127.0.0.1}:${INGEST_MTLS_PORT:-8443}:8443"
+    networks:
+      mtls-edge: {}
+      mtls-upstream:
+        ipv4_address: 172.30.250.10
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/nginx-health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    depends_on:
+      ingest-api:
+        condition: service_healthy
+
+  ingest-api:
+    environment:
+      INGEST_AUTH_MODE: mtls
+      INGEST_TRUSTED_PROXIES: '["172.30.250.10/32"]'
+    networks:
+      default: {}
+      mtls-upstream: {}
+
+  mtls-register:
+    image: gcc-backend:dev
+    restart: "no"
+    environment:
+      DATABASE_URL: postgresql://gcc_owner:${GCC_OWNER_DB_PASSWORD:-dev-owner-pw}@timescaledb:5432/gcc
+      COLLECTORS: pnq1-col-a pnq1-col-b hyd1-col-a
+    volumes:
+      - ./infra/pki/out:/pki:ro
+    command:
+      - python
+      - -c
+      - |
+        import asyncio, hashlib, os, pathlib, sys
+        import asyncpg
+        from cryptography import x509
+        from cryptography.hazmat.primitives.serialization import Encoding
+
+        async def main() -> None:
+            conn = await asyncpg.connect(os.environ["DATABASE_URL"])
+            try:
+                for name in os.environ["COLLECTORS"].split():
+                    path = pathlib.Path("/pki") / f"{name}.crt"
+                    if not path.exists():
+                        sys.exit(f"missing {path}: run infra/pki/make-collector-cert.sh {name}")
+                    cert = x509.load_pem_x509_certificate(path.read_bytes())
+                    fp = hashlib.sha256(cert.public_bytes(Encoding.DER)).hexdigest()
+                    status = await conn.execute(
+                        "UPDATE collectors SET cert_fingerprint = $$1 WHERE name = $$2", fp, name
+                    )
+                    print(f"{name}: {fp} ({status})")
+            finally:
+                await conn.close()
+
+        asyncio.run(main())
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  collector-pnq1-a:
+    environment: &collector-mtls-env
+      GCC_INGEST_URL: https://ingest-mtls:8443
+      GCC_INGEST_TOKEN: ""
+      GCC_CA_BUNDLE: /etc/gcc-collector/pki/ca.crt
+      GCC_CLIENT_CERT: /etc/gcc-collector/pki/pnq1-col-a.crt
+      GCC_CLIENT_KEY: /etc/gcc-collector/pki/pnq1-col-a.key
+    volumes: &collector-mtls-volumes
+      - ./infra/pki/out:/etc/gcc-collector/pki:ro
+    networks: &collector-mtls-networks
+      default: {}
+      mtls-edge: {}
+    depends_on: &collector-mtls-deps
+      ingest-mtls:
+        condition: service_healthy
+      mtls-register:
+        condition: service_completed_successfully
+
+  collector-pnq1-b:
+    environment:
+      <<: *collector-mtls-env
+      GCC_CLIENT_CERT: /etc/gcc-collector/pki/pnq1-col-b.crt
+      GCC_CLIENT_KEY: /etc/gcc-collector/pki/pnq1-col-b.key
+    volumes: *collector-mtls-volumes
+    networks: *collector-mtls-networks
+    depends_on: *collector-mtls-deps
+
+  collector-hyd1-a:
+    environment:
+      <<: *collector-mtls-env
+      GCC_CLIENT_CERT: /etc/gcc-collector/pki/hyd1-col-a.crt
+      GCC_CLIENT_KEY: /etc/gcc-collector/pki/hyd1-col-a.key
+    volumes: *collector-mtls-volumes
+    networks: *collector-mtls-networks
+    depends_on: *collector-mtls-deps
+
+networks:
+  # Collectors <-> nginx.
+  mtls-edge: {}
+  # nginx <-> ingest-api only. The fixed address is what INGEST_TRUSTED_PROXIES trusts.
+  mtls-upstream:
+    ipam:
+      config:
+        - subnet: 172.30.250.0/24

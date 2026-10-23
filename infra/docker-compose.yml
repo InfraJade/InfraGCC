@@ -1,0 +1,520 @@
+# Jade GCC — full local stack.
+#
+#   docker compose up            (from the repo root; compose.yaml includes this file, DECISIONS.md D2)
+#   docker compose -f infra/docker-compose.yml up   (equivalent; then .env is read from infra/)
+#
+# Every secret and host port is `${VAR:-dev-default}` (D3): a clean clone starts without a .env file.
+# `.env.example` at the repo root documents each variable. Paths below are relative to this file (infra/).
+#
+# Start order (enforced by depends_on + healthchecks):
+#   timescaledb, redis, mailpit, redfish-*, bmc-simulator
+#     ─► keycloak, migrate (one-shot: schema + dev seed)
+#     ─► ingest-api, app-api, alert-worker, scheduler, superset-init (one-shot)
+#     ─► collectors, superset (+ worker, beat), web
+
+name: gcc
+
+# ---------------------------------------------------------------------------------------------------------
+# Shared fragments
+# ---------------------------------------------------------------------------------------------------------
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+# One environment for every backend service. Services override DATABASE_URL with their own role.
+x-backend-env: &backend-env
+  APP_ENV: ${APP_ENV:-dev}
+  LOG_LEVEL: ${LOG_LEVEL:-INFO}
+  DATABASE_URL: postgresql+asyncpg://gcc_app:${GCC_APP_DB_PASSWORD:-dev-app-pw}@timescaledb:5432/gcc
+  DB_POOL_SIZE: ${DB_POOL_SIZE:-5}
+  DB_MAX_OVERFLOW: ${DB_MAX_OVERFLOW:-5}
+  REDIS_URL: redis://redis:6379/0
+  CELERY_BROKER_URL: redis://redis:6379/1
+  OIDC_ISSUER: ${OIDC_ISSUER:-http://localhost:8080/realms/gcc}
+  OIDC_AUDIENCE: ${OIDC_AUDIENCE:-gcc-api}
+  OIDC_JWKS_URL: ${OIDC_JWKS_URL:-http://keycloak:8080/realms/gcc/protocol/openid-connect/certs}
+  INGEST_AUTH_MODE: ${INGEST_AUTH_MODE:-token}
+  INGEST_SHARED_TOKEN: ${INGEST_SHARED_TOKEN:-dev-ingest-token}
+  APP_SECRET_KEY: ${APP_SECRET_KEY:-dev-app-secret-key-change-me-32bytes!!}
+  SMTP_HOST: ${SMTP_HOST:-mailpit}
+  SMTP_PORT: ${SMTP_PORT:-1025}
+  SMTP_FROM: ${SMTP_FROM:-Jade GCC Monitoring <gcc-alerts@gcc.example>}
+  SUPERSET_URL: ${SUPERSET_URL:-http://superset:8088}
+  SUPERSET_PUBLIC_URL: ${SUPERSET_PUBLIC_URL:-http://localhost:8090}
+  SUPERSET_ADMIN_USERNAME: ${SUPERSET_ADMIN_USERNAME:-gcc_embed}
+  SUPERSET_ADMIN_PASSWORD: ${SUPERSET_ADMIN_PASSWORD:-dev-superset-embed-pw}
+  CORS_ORIGINS: ${CORS_ORIGINS:-["http://localhost:3000","http://localhost:5173"]}
+  PUBLIC_APP_URL: ${PUBLIC_APP_URL:-http://localhost:3000}
+  DEV_BACKFILL_ENABLED: ${DEV_BACKFILL_ENABLED:-true}
+  DEV_BACKFILL_DAYS: ${DEV_BACKFILL_DAYS:-7}
+
+x-backend: &backend
+  build:
+    context: ../backend
+  image: gcc-backend:dev
+  restart: unless-stopped
+  logging: *default-logging
+  environment:
+    <<: *backend-env
+
+x-collector-env: &collector-env
+  GCC_INGEST_URL: ${GCC_INGEST_URL:-http://ingest-api:8001}
+  GCC_INGEST_TOKEN: ${INGEST_SHARED_TOKEN:-dev-ingest-token}
+  GCC_CREDENTIALS_PROVIDER: ${GCC_CREDENTIALS_PROVIDER:-env}
+  GCC_BMC_USERNAME: ${GCC_BMC_USERNAME:-gcc-monitor}
+  GCC_BMC_PASSWORD: ${GCC_BMC_PASSWORD:-dev-bmc-pw}
+  GCC_BMC_VERIFY_TLS: ${GCC_BMC_VERIFY_TLS:-false}
+  GCC_BUFFER_DIR: /var/lib/gcc-collector/buffer
+  GCC_BUFFER_TTL_S: ${GCC_BUFFER_TTL_S:-86400}
+  GCC_LOG_LEVEL: ${GCC_LOG_LEVEL:-INFO}
+  GCC_METRICS_PORT: "9108"
+
+x-collector: &collector
+  build:
+    context: ../collector
+  image: gcc-collector:dev
+  command: ["python", "-m", "gcc_collector"]
+  restart: unless-stopped
+  logging: *default-logging
+  healthcheck:
+    test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:9108/metrics', timeout=3)"]
+    interval: 30s
+    timeout: 5s
+    retries: 3
+    start_period: 20s
+  depends_on:
+    ingest-api:
+      condition: service_healthy
+    bmc-simulator:
+      condition: service_healthy
+    redfish-dell:
+      condition: service_healthy
+    redfish-hpe:
+      condition: service_healthy
+    redfish-lenovo:
+      condition: service_healthy
+
+x-redfish-mockup: &redfish-mockup
+  image: dmtf/redfish-mockup-server:latest
+  command: ["-D", "/mockup", "-H", "0.0.0.0", "-p", "8000"]
+  restart: unless-stopped
+  logging: *default-logging
+  healthcheck:
+    test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://127.0.0.1:8000/redfish/v1"]
+    interval: 15s
+    timeout: 5s
+    retries: 5
+    start_period: 10s
+
+# Superset: copied from superset/compose.snippet.yaml (owned by the Superset build; keep in sync), plus
+# log rotation and the Keycloak dependency for the web service.
+x-superset-env: &superset-env
+  SUPERSET_ENV: production
+  SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY:-dev-superset-secret-key-change-me}
+  SUPERSET_METADATA_DB_URI: postgresql+psycopg2://superset_meta:${SUPERSET_META_DB_PASSWORD:-dev-superset-meta-pw}@timescaledb:5432/superset_meta
+  SUPERSET_ANALYTICS_DB_URI: postgresql+psycopg2://gcc_superset_ro:${GCC_SUPERSET_RO_DB_PASSWORD:-dev-superset-ro-pw}@timescaledb:5432/gcc
+  SUPERSET_CACHE_REDIS_URL: redis://redis:6379/2
+  SUPERSET_CELERY_BROKER_URL: redis://redis:6379/3
+  SUPERSET_RESULTS_REDIS_URL: redis://redis:6379/4
+  SUPERSET_GUEST_TOKEN_SECRET: ${SUPERSET_GUEST_TOKEN_SECRET:-dev-superset-guest-token-secret}
+  SUPERSET_PUBLIC_URL: ${SUPERSET_PUBLIC_URL:-http://localhost:8090}
+  SUPERSET_WEBDRIVER_BASEURL: http://superset:8088/
+  SUPERSET_UI_ADMIN_USERNAME: ${SUPERSET_UI_ADMIN_USERNAME:-admin}
+  SUPERSET_UI_ADMIN_PASSWORD: ${SUPERSET_UI_ADMIN_PASSWORD:-dev-superset-admin}
+  SUPERSET_EMBED_USERNAME: ${SUPERSET_ADMIN_USERNAME:-gcc_embed}
+  SUPERSET_EMBED_PASSWORD: ${SUPERSET_ADMIN_PASSWORD:-dev-superset-embed-pw}
+  # Origins allowed to frame Superset (CSP frame-ancestors) and call its API (CORS).
+  SUPERSET_EMBED_ALLOWED_ORIGINS: ${SUPERSET_EMBED_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:5173}
+  # Referrer allow-list stored on each embedded dashboard; empty = any (frame-ancestors still applies).
+  SUPERSET_EMBED_ALLOWED_DOMAINS: ${SUPERSET_EMBED_ALLOWED_DOMAINS:-}
+  SUPERSET_AUTH: ${SUPERSET_AUTH:-oauth}
+  SUPERSET_OIDC_ISSUER: ${OIDC_ISSUER:-http://localhost:8080/realms/gcc}
+  SUPERSET_OIDC_INTERNAL_URL: http://keycloak:8080/realms/gcc
+  SUPERSET_OIDC_CLIENT_ID: ${SUPERSET_OIDC_CLIENT_ID:-superset}
+  SUPERSET_OIDC_CLIENT_SECRET: ${SUPERSET_OIDC_CLIENT_SECRET:-dev-superset-oidc-secret}
+  SUPERSET_SITE_CODES: ${SUPERSET_SITE_CODES:-PNQ1,HYD1}
+  SUPERSET_REPORT_RECIPIENTS: ${SUPERSET_REPORT_RECIPIENTS:-capacity-planning@gcc.example}
+  SUPERSET_CAPACITY_REPORT_CRON: ${SUPERSET_CAPACITY_REPORT_CRON:-0 7 * * 1}
+  SMTP_HOST: ${SMTP_HOST:-mailpit}
+  SMTP_PORT: ${SMTP_PORT:-1025}
+  SMTP_MAIL_FROM: ${SUPERSET_MAIL_FROM:-superset@gcc.example}
+
+x-superset: &superset
+  build:
+    context: ../superset
+  image: gcc-superset:dev
+  restart: unless-stopped
+  logging: *default-logging
+  environment:
+    <<: *superset-env
+  volumes:
+    - superset-home:/app/superset_home
+
+
+# ---------------------------------------------------------------------------------------------------------
+services:
+  # ---- Data stores ------------------------------------------------------------------------------------
+  timescaledb:
+    image: timescale/timescaledb:2.17.2-pg16
+    restart: unless-stopped
+    logging: *default-logging
+    command: ["postgres", "-c", "max_connections=200"]
+    shm_size: 256mb
+    environment:
+      POSTGRES_USER: gcc_owner
+      POSTGRES_PASSWORD: ${GCC_OWNER_DB_PASSWORD:-dev-owner-pw}
+      POSTGRES_DB: gcc
+      # Read by infra/timescale/init/10-roles-and-databases.sh on first start of an empty volume only.
+      GCC_APP_DB_PASSWORD: ${GCC_APP_DB_PASSWORD:-dev-app-pw}
+      GCC_INGEST_DB_PASSWORD: ${GCC_INGEST_DB_PASSWORD:-dev-ingest-pw}
+      GCC_SUPERSET_RO_DB_PASSWORD: ${GCC_SUPERSET_RO_DB_PASSWORD:-dev-superset-ro-pw}
+      SUPERSET_META_DB_PASSWORD: ${SUPERSET_META_DB_PASSWORD:-dev-superset-meta-pw}
+      KEYCLOAK_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:-dev-keycloak-db-pw}
+      # Size timescaledb-tune for a laptop instead of the whole Docker VM.
+      TS_TUNE_MEMORY: ${TS_TUNE_MEMORY:-1GB}
+      TS_TUNE_NUM_CPUS: ${TS_TUNE_NUM_CPUS:-2}
+    ports:
+      - "${BIND_ADDRESS:-127.0.0.1}:${TIMESCALE_HOST_PORT:-5433}:5432"
+    volumes:
+      - timescaledb-data:/var/lib/postgresql/data
+      - ./timescale/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      # TCP check: during first-start initialisation Postgres listens on the Unix socket only, so this stays
+      # unhealthy until init scripts are done. First init can take 2-3 minutes on a laptop (Windows bind I/O).
+      test: ["CMD-SHELL", "pg_isready -U gcc_owner -d gcc -h 127.0.0.1"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 300s
+      start_interval: 3s
+
+  redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    logging: *default-logging
+    # Dev: no persistence. DB 0 backend live/rate limits, 1 backend Celery, 2-4 Superset.
+    # volatile-lru only evicts keys with a TTL (caches), never Celery queues.
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--maxmemory", "512mb", "--maxmemory-policy", "volatile-lru"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  mailpit:
+    image: axllent/mailpit:v1.21
+    restart: unless-stopped
+    logging: *default-logging
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: "1"
+      MP_SMTP_AUTH_ALLOW_INSECURE: "1"
+      MP_MAX_MESSAGES: "5000"
+    ports:
+      - "${BIND_ADDRESS:-127.0.0.1}:${MAILPIT_UI_PORT:-8025}:8025"
+    healthcheck:
+      test: ["CMD", "/mailpit", "readyz"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  # ---- Identity -------------------------------------------------------------------------------------------
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0.7
+    restart: unless-stopped
+    logging: *default-logging
+    # The realm is imported only when it does not exist yet (stored in the `keycloak` database). After editing
+    # gcc-realm.json, reset with `docker compose down -v` or delete the realm in the admin console.
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USERNAME:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-dev-keycloak-admin}
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://timescaledb:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:-dev-keycloak-db-pw}
+      KC_DB_POOL_MAX_SIZE: "10"
+      # Browsers and token `iss` use the public URL; containers reach Keycloak at http://keycloak:8080.
+      KC_HOSTNAME: ${KEYCLOAK_PUBLIC_URL:-http://localhost:8080}
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      KC_HTTP_ENABLED: "true"
+      KC_HEALTH_ENABLED: "true"
+      KC_LOG_LEVEL: ${KEYCLOAK_LOG_LEVEL:-info}
+      JAVA_OPTS_KC_HEAP: "-Xms128m -Xmx768m"
+    ports:
+      - "${BIND_ADDRESS:-127.0.0.1}:${KEYCLOAK_PORT:-8080}:8080"
+    volumes:
+      - ./keycloak/gcc-realm.json:/opt/keycloak/data/import/gcc-realm.json:ro
+    healthcheck:
+      # The image has no curl/wget; talk HTTP over bash's /dev/tcp to the management port.
+      test:
+        - CMD
+        - bash
+        - -c
+        - "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q 'HTTP/1.1 200' <&3"
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      # First start augments the server for Postgres and imports the realm: 1-4 minutes on a busy laptop.
+      start_period: 300s
+      start_interval: 5s
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+
+  # ---- Backend (one image) --------------------------------------------------------------------------------
+  migrate:
+    <<: *backend
+    restart: "no"
+    command: ["sh", "-c", "alembic upgrade head && python -m app.seed dev"]
+    environment:
+      <<: *backend-env
+      SERVICE_NAME: migrate
+      DATABASE_URL: postgresql+asyncpg://gcc_owner:${GCC_OWNER_DB_PASSWORD:-dev-owner-pw}@timescaledb:5432/gcc
+      MIGRATION_DATABASE_URL: postgresql+asyncpg://gcc_owner:${GCC_OWNER_DB_PASSWORD:-dev-owner-pw}@timescaledb:5432/gcc
+      SEED_SIM_SERVERS: ${SIM_COUNT:-36}
+      SEED_SIM_BASE_PORT: ${SIM_BASE_PORT:-20000}
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+
+  ingest-api:
+    <<: *backend
+    command: ["uvicorn", "app.ingest.main:app", "--host", "0.0.0.0", "--port", "8001", "--proxy-headers"]
+    environment:
+      <<: *backend-env
+      SERVICE_NAME: ingest-api
+      DATABASE_URL: postgresql+asyncpg://gcc_ingest:${GCC_INGEST_DB_PASSWORD:-dev-ingest-pw}@timescaledb:5432/gcc
+      # FORWARDED_ALLOW_IPS is deliberately left at uvicorn's default (127.0.0.1): in mTLS mode the app must
+      # see the proxy's own address to decide whether to trust the client-certificate headers (D8).
+    ports:
+      - "${BIND_ADDRESS:-127.0.0.1}:${INGEST_API_PORT:-8001}:8001"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/healthz', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+
+  app-api:
+    <<: *backend
+    command: ["uvicorn", "app.api.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]
+    environment:
+      <<: *backend-env
+      SERVICE_NAME: app-api
+      # Only the web container's nginx sits in front of the app API in dev.
+      FORWARDED_ALLOW_IPS: "*"
+    ports:
+      - "${BIND_ADDRESS:-127.0.0.1}:${APP_API_PORT:-8000}:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+
+  alert-worker:
+    <<: *backend
+    command: ["celery", "-A", "app.worker.celery_app", "worker", "-Q", "alerts,notify", "-c", "4", "-n", "alerts@%h", "--loglevel", "INFO"]
+    environment:
+      <<: *backend-env
+      SERVICE_NAME: alert-worker
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      mailpit:
+        condition: service_healthy
+
+  scheduler:
+    <<: *backend
+    # Celery beat embedded (-B): run exactly one replica.
+    command: ["celery", "-A", "app.worker.celery_app", "worker", "-B", "-Q", "scheduled", "-c", "2", "-n", "scheduler@%h", "--loglevel", "INFO", "--schedule", "/tmp/celerybeat-schedule"]
+    environment:
+      <<: *backend-env
+      SERVICE_NAME: scheduler
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      mailpit:
+        condition: service_healthy
+
+  # ---- Simulated hardware ---------------------------------------------------------------------------------
+  redfish-dell:
+    <<: *redfish-mockup
+    volumes:
+      - ../mockups/trees/dell-poweredge-r750:/mockup:ro
+
+  redfish-hpe:
+    <<: *redfish-mockup
+    volumes:
+      - ../mockups/trees/hpe-proliant-dl380-gen10:/mockup:ro
+
+  redfish-lenovo:
+    <<: *redfish-mockup
+    volumes:
+      - ../mockups/trees/lenovo-thinksystem-sr650-v3:/mockup:ro
+
+  bmc-simulator:
+    build:
+      context: ../mockups
+    image: gcc-bmc-simulator:dev
+    command: ["gcc-bmc-simulator"]
+    restart: unless-stopped
+    logging: *default-logging
+    environment:
+      SIM_COUNT: ${SIM_COUNT:-36}
+      SIM_BASE_PORT: ${SIM_BASE_PORT:-20000}
+      SIM_CONTROL_PORT: "9100"
+      SIM_USERNAME: ${GCC_BMC_USERNAME:-gcc-monitor}
+      SIM_PASSWORD: ${GCC_BMC_PASSWORD:-dev-bmc-pw}
+      SIM_FAULT_RATE: ${SIM_FAULT_RATE:-0.05}
+      SIM_SEED: ${SIM_SEED:-42}
+      SIM_HOST: 0.0.0.0
+      SIM_STEP_S: ${SIM_STEP_S:-10}
+      SIM_LOG_LEVEL: ${SIM_LOG_LEVEL:-INFO}
+    # Only the control API is published; collectors reach BMC ports SIM_BASE_PORT+1.. on the compose network.
+    ports:
+      - "${BIND_ADDRESS:-127.0.0.1}:${SIM_CONTROL_HOST_PORT:-9100}:9100"
+    healthcheck:
+      # Same check as the image's own HEALTHCHECK (GET /health on the control port).
+      test: ["CMD", "python", "-m", "gcc_redfish_sim.simulator.healthcheck"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  # ---- Collectors (on-prem in production) -----------------------------------------------------------------
+  collector-pnq1-a:
+    <<: *collector
+    hostname: collector-pnq1-a
+    environment:
+      <<: *collector-env
+      GCC_COLLECTOR_NAME: pnq1-col-a
+    volumes:
+      - collector-pnq1-a-buffer:/var/lib/gcc-collector/buffer
+
+  collector-pnq1-b:
+    <<: *collector
+    hostname: collector-pnq1-b
+    environment:
+      <<: *collector-env
+      GCC_COLLECTOR_NAME: pnq1-col-b
+    volumes:
+      - collector-pnq1-b-buffer:/var/lib/gcc-collector/buffer
+
+  collector-hyd1-a:
+    <<: *collector
+    hostname: collector-hyd1-a
+    environment:
+      <<: *collector-env
+      GCC_COLLECTOR_NAME: hyd1-col-a
+    volumes:
+      - collector-hyd1-a-buffer:/var/lib/gcc-collector/buffer
+
+  # ---- Superset -------------------------------------------------------------------------------------------
+  superset-init:
+    <<: *superset
+    restart: "no"
+    command: ["/app/docker/gcc-superset-init.sh"]
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  superset:
+    <<: *superset
+    ports:
+      - "${BIND_ADDRESS:-127.0.0.1}:${SUPERSET_PORT:-8090}:8088"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://127.0.0.1:8088/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    depends_on:
+      superset-init:
+        condition: service_completed_successfully
+      keycloak:
+        condition: service_healthy
+
+  superset-worker:
+    <<: *superset
+    command: ["celery", "--app=superset.tasks.celery_app:app", "worker", "--pool=prefork", "-O", "fair", "-c", "2", "--loglevel=INFO"]
+    healthcheck:
+      test: ["CMD-SHELL", "celery --app=superset.tasks.celery_app:app inspect ping -d celery@$$HOSTNAME --timeout 10 | grep -q pong"]
+      interval: 60s
+      timeout: 30s
+      retries: 3
+      start_period: 60s
+    depends_on:
+      superset-init:
+        condition: service_completed_successfully
+
+  superset-beat:
+    <<: *superset
+    command: ["celery", "--app=superset.tasks.celery_app:app", "beat", "--pidfile", "/tmp/celerybeat.pid", "--schedule", "/tmp/celerybeat-schedule", "--loglevel=INFO"]
+    healthcheck:
+      # beat rewrites its schedule file every few minutes; a stale file means the scheduler is stuck.
+      test: ["CMD-SHELL", "test -n \"$$(find /tmp/celerybeat-schedule* -mmin -10 2>/dev/null)\""]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+    depends_on:
+      superset-init:
+        condition: service_completed_successfully
+
+  # ---- Web ------------------------------------------------------------------------------------------------
+  web:
+    build:
+      context: ../frontend
+    image: gcc-web:dev
+    restart: unless-stopped
+    logging: *default-logging
+    # Runtime config: the image writes /config.js from these at start (frontend/docker/05-gcc-config.envsh).
+    environment:
+      OIDC_AUTHORITY: ${OIDC_ISSUER:-http://localhost:8080/realms/gcc}
+      OIDC_CLIENT_ID: gcc-web
+      SUPERSET_URL: ${SUPERSET_PUBLIC_URL:-http://localhost:8090}
+      API_BASE: ""
+      API_UPSTREAM: http://app-api:8000
+    ports:
+      - "${BIND_ADDRESS:-127.0.0.1}:${WEB_PORT:-3000}:80"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    # Analytics pages degrade gracefully while Superset is still starting, so the UI does not wait for it.
+    depends_on:
+      app-api:
+        condition: service_healthy
+
+volumes:
+  timescaledb-data:
+  superset-home:
+  collector-pnq1-a-buffer:
+  collector-pnq1-b-buffer:
+  collector-hyd1-a-buffer:

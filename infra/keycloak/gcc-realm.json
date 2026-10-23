@@ -1,0 +1,277 @@
+{
+  "realm": "gcc",
+  "displayName": "Jade GCC Monitoring",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "resetPasswordAllowed": false,
+  "rememberMe": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "editUsernameAllowed": false,
+  "accessTokenLifespan": 900,
+  "accessTokenLifespanForImplicitFlow": 900,
+  "ssoSessionIdleTimeout": 28800,
+  "ssoSessionMaxLifespan": 43200,
+  "offlineSessionIdleTimeout": 2592000,
+  "accessCodeLifespan": 60,
+  "accessCodeLifespanLogin": 1800,
+  "revokeRefreshToken": false,
+  "bruteForceProtected": true,
+  "permanentLockout": false,
+  "failureFactor": 10,
+  "waitIncrementSeconds": 60,
+  "maxFailureWaitSeconds": 900,
+  "minimumQuickLoginWaitSeconds": 60,
+  "quickLoginCheckMilliSeconds": 1000,
+  "maxDeltaTimeSeconds": 43200,
+  "groups": [
+    { "name": "gcc-viewer", "path": "/gcc-viewer", "attributes": { "description": ["Role: Viewer (read-only dashboards and alerts)"] } },
+    { "name": "gcc-noc-operator", "path": "/gcc-noc-operator", "attributes": { "description": ["Role: NOC operator (acknowledge and comment on alerts)"] } },
+    { "name": "gcc-dc-engineer", "path": "/gcc-dc-engineer", "attributes": { "description": ["Role: DC engineer (onboard servers, racks, maintenance windows)"] } },
+    { "name": "gcc-platform-admin", "path": "/gcc-platform-admin", "attributes": { "description": ["Role: Platform admin (thresholds, rules, routes, audit log)"] } },
+    { "name": "gcc-analyst", "path": "/gcc-analyst", "attributes": { "description": ["Role: Analyst (Viewer in the app, editor in Superset)"] } },
+    { "name": "gcc-site-PNQ1", "path": "/gcc-site-PNQ1", "attributes": { "description": ["Site scope: Pune DC1 only"] } },
+    { "name": "gcc-site-HYD1", "path": "/gcc-site-HYD1", "attributes": { "description": ["Site scope: Hyderabad DC2 only"] } }
+  ],
+  "clients": [
+    {
+      "clientId": "gcc-web",
+      "name": "Jade GCC web app",
+      "description": "React single-page app. Public client, authorization code + PKCE (S256).",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "frontchannelLogout": true,
+      "fullScopeAllowed": false,
+      "rootUrl": "http://localhost:3000",
+      "baseUrl": "/",
+      "redirectUris": ["http://localhost:3000/*", "http://localhost:5173/*"],
+      "webOrigins": ["+"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:3000/*##http://localhost:5173/*",
+        "oauth2.device.authorization.grant.enabled": "false",
+        "backchannel.logout.session.required": "true"
+      },
+      "protocolMappers": [
+        {
+          "name": "audience gcc-api",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "gcc-api",
+            "access.token.claim": "true",
+            "id.token.claim": "false",
+            "introspection.token.claim": "true"
+          }
+        },
+        {
+          "name": "groups",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-group-membership-mapper",
+          "consentRequired": false,
+          "config": {
+            "claim.name": "groups",
+            "full.path": "false",
+            "access.token.claim": "true",
+            "id.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "gcc-api",
+      "name": "Jade GCC API (audience)",
+      "description": "Audience for access tokens accepted by the app API. No login flows.",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "bearerOnly": false,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "fullScopeAllowed": false,
+      "redirectUris": [],
+      "webOrigins": [],
+      "attributes": {
+        "oauth2.device.authorization.grant.enabled": "false"
+      }
+    },
+    {
+      "clientId": "superset",
+      "name": "Apache Superset",
+      "description": "Superset SSO for analysts and admins (confidential client).",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "dev-superset-oidc-secret",
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "frontchannelLogout": true,
+      "fullScopeAllowed": false,
+      "rootUrl": "http://localhost:8090",
+      "baseUrl": "/",
+      "redirectUris": ["http://localhost:8090/*"],
+      "webOrigins": ["http://localhost:8090"],
+      "attributes": {
+        "post.logout.redirect.uris": "http://localhost:8090/*",
+        "oauth2.device.authorization.grant.enabled": "false"
+      },
+      "protocolMappers": [
+        {
+          "name": "groups",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-group-membership-mapper",
+          "consentRequired": false,
+          "config": {
+            "claim.name": "groups",
+            "full.path": "false",
+            "access.token.claim": "true",
+            "id.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "gcc-e2e",
+      "name": "DEV ONLY: scripted login for E2E and load tests",
+      "description": "DEV ONLY. Confidential client with the password (direct access) grant so Playwright and the load test can get a gcc-api token for a demo user without a browser. Never create this client in staging or production.",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "dev-e2e-secret",
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "fullScopeAllowed": false,
+      "redirectUris": [],
+      "webOrigins": [],
+      "attributes": {
+        "oauth2.device.authorization.grant.enabled": "false"
+      },
+      "protocolMappers": [
+        {
+          "name": "audience gcc-api",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "gcc-api",
+            "access.token.claim": "true",
+            "id.token.claim": "false",
+            "introspection.token.claim": "true"
+          }
+        },
+        {
+          "name": "groups",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-group-membership-mapper",
+          "consentRequired": false,
+          "config": {
+            "claim.name": "groups",
+            "full.path": "false",
+            "access.token.claim": "true",
+            "id.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "viewer",
+      "email": "viewer@gcc.example",
+      "firstName": "Vera",
+      "lastName": "Viewer",
+      "enabled": true,
+      "emailVerified": true,
+      "requiredActions": [],
+      "credentials": [{ "type": "password", "value": "demo1234", "temporary": false }],
+      "groups": ["/gcc-viewer"]
+    },
+    {
+      "username": "noc",
+      "email": "noc@gcc.example",
+      "firstName": "Neha",
+      "lastName": "Operator",
+      "enabled": true,
+      "emailVerified": true,
+      "requiredActions": [],
+      "credentials": [{ "type": "password", "value": "demo1234", "temporary": false }],
+      "groups": ["/gcc-noc-operator"]
+    },
+    {
+      "username": "engineer",
+      "email": "engineer@gcc.example",
+      "firstName": "Eshan",
+      "lastName": "Engineer",
+      "enabled": true,
+      "emailVerified": true,
+      "requiredActions": [],
+      "credentials": [{ "type": "password", "value": "demo1234", "temporary": false }],
+      "groups": ["/gcc-dc-engineer"]
+    },
+    {
+      "username": "admin",
+      "email": "admin@gcc.example",
+      "firstName": "Aditi",
+      "lastName": "Admin",
+      "enabled": true,
+      "emailVerified": true,
+      "requiredActions": [],
+      "credentials": [{ "type": "password", "value": "demo1234", "temporary": false }],
+      "groups": ["/gcc-platform-admin"]
+    },
+    {
+      "username": "analyst",
+      "email": "analyst@gcc.example",
+      "firstName": "Arjun",
+      "lastName": "Analyst",
+      "enabled": true,
+      "emailVerified": true,
+      "requiredActions": [],
+      "credentials": [{ "type": "password", "value": "demo1234", "temporary": false }],
+      "groups": ["/gcc-analyst"]
+    },
+    {
+      "username": "noc-pune",
+      "email": "noc-pune@gcc.example",
+      "firstName": "Pooja",
+      "lastName": "Pune NOC",
+      "enabled": true,
+      "emailVerified": true,
+      "requiredActions": [],
+      "credentials": [{ "type": "password", "value": "demo1234", "temporary": false }],
+      "groups": ["/gcc-noc-operator", "/gcc-site-PNQ1"]
+    },
+    {
+      "username": "engineer-hyd",
+      "email": "engineer-hyd@gcc.example",
+      "firstName": "Harsha",
+      "lastName": "Hyderabad Engineer",
+      "enabled": true,
+      "emailVerified": true,
+      "requiredActions": [],
+      "credentials": [{ "type": "password", "value": "demo1234", "temporary": false }],
+      "groups": ["/gcc-dc-engineer", "/gcc-site-HYD1"]
+    }
+  ]
+}

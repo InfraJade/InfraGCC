@@ -1,0 +1,11 @@
+# Jade GCC — one-command local stack: `docker compose up` from the repo root (DECISIONS.md D2).
+#
+# The services live in infra/docker-compose.yml; paths inside it are relative to infra/. Variables come from
+# the shell or from ./.env (optional: every value has a dev default, see .env.example).
+#
+# Optional overlays:
+#   mTLS ingest (prod-style):  docker compose -f compose.yaml -f infra/compose.mtls.yaml up
+name: gcc
+
+include:
+  - path: infra/docker-compose.yml
