@@ -1,6 +1,6 @@
 {
   "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Processors",
-  "@odata.type": "##ProcessorCollection.ProcessorCollectionCollection.#ProcessorCollection.ProcessorCollectionCollection",
+  "@odata.type": "#ProcessorCollection.ProcessorCollection",
   "Name": "Processors Collection",
   "Members": [
     {

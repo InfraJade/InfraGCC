@@ -1,6 +1,6 @@
 {
   "@odata.id": "/redfish/v1/Systems/1/Storage",
-  "@odata.type": "##StorageCollection.StorageCollectionCollection.#StorageCollection.StorageCollectionCollection",
+  "@odata.type": "#StorageCollection.StorageCollection",
   "Name": "Storage Collection",
   "Members": [
     {

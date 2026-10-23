@@ -1,6 +1,6 @@
 {
   "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/EthernetInterfaces",
-  "@odata.type": "##EthernetInterfaceCollection.EthernetInterfaceCollectionCollection.#EthernetInterfaceCollection.EthernetInterfaceCollectionCollection",
+  "@odata.type": "#EthernetInterfaceCollection.EthernetInterfaceCollection",
   "Name": "Manager Ethernet Interface Collection",
   "Members": [
     {

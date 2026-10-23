@@ -26,21 +26,38 @@ REFERENCE_TREES = [
 DEFAULT_OUT = Path(__file__).resolve().parents[2] / "trees"
 
 
+def _render(body: object) -> str:
+    return json.dumps(body, indent=2, ensure_ascii=False) + "\n"
+
+
 def write_tree(out_dir: Path, name: str, model_key: str, index: int) -> int:
+    """Write one tree in place: changed files are rewritten, stale ones removed.
+
+    The tree is updated in place (not deleted and rewritten) so a mockup server or test reading it at the
+    same time never sees it missing. Files are written with LF line endings on every platform.
+    """
     root = out_dir / name
-    if root.exists():
-        shutil.rmtree(root)
     tree = build_tree(make_state(model_key, index))
-    for path, body in tree.items():
-        target = root / path.lstrip("/") / "index.json"
+    files = {root / path.lstrip("/") / "index.json": _render(body) for path, body in tree.items()}
+    files[root / "redfish" / "index.json"] = _render({"v1": "/redfish/v1/"})
+    for target, text in files.items():
+        if target.is_file() and target.read_bytes() == text.encode("utf-8"):
+            continue
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(json.dumps(body, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    (root / "redfish" / "index.json").write_text(json.dumps({"v1": "/redfish/v1/"}, indent=2) + "\n")
+        target.write_text(text, encoding="utf-8", newline="\n")
+    if root.exists():
+        for stale in sorted(set(root.rglob("index.json")) - set(files)):
+            stale.unlink()
+        for directory in sorted((d for d in root.rglob("*") if d.is_dir()), key=lambda d: -len(d.parts)):
+            if not any(directory.iterdir()):
+                shutil.rmtree(directory, ignore_errors=True)
     return len(tree)
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     parser.add_argument("--out", type=Path, default=DEFAULT_OUT)
     args = parser.parse_args()
     for name, model_key, index in REFERENCE_TREES:

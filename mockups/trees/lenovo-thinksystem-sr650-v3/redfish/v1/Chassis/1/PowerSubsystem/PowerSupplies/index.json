@@ -1,6 +1,6 @@
 {
   "@odata.id": "/redfish/v1/Chassis/1/PowerSubsystem/PowerSupplies",
-  "@odata.type": "##PowerSupplyCollection.PowerSupplyCollectionCollection.#PowerSupplyCollection.PowerSupplyCollectionCollection",
+  "@odata.type": "#PowerSupplyCollection.PowerSupplyCollection",
   "Name": "Power Supply Collection",
   "Members": [
     {

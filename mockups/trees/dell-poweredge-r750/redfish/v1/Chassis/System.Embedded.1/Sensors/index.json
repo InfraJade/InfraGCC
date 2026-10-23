@@ -1,6 +1,6 @@
 {
   "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors",
-  "@odata.type": "##SensorCollection.SensorCollectionCollection.#SensorCollection.SensorCollectionCollection",
+  "@odata.type": "#SensorCollection.SensorCollection",
   "Name": "Sensor Collection",
   "Members": [
     {

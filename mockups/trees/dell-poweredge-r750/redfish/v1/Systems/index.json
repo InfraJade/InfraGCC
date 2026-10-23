@@ -1,6 +1,6 @@
 {
   "@odata.id": "/redfish/v1/Systems",
-  "@odata.type": "##ComputerSystemCollection.ComputerSystemCollectionCollection.#ComputerSystemCollection.ComputerSystemCollectionCollection",
+  "@odata.type": "#ComputerSystemCollection.ComputerSystemCollection",
   "Name": "Computer System Collection",
   "Members": [
     {

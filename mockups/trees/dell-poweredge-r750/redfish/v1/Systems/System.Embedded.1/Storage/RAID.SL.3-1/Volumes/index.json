@@ -1,6 +1,6 @@
 {
   "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Storage/RAID.SL.3-1/Volumes",
-  "@odata.type": "##VolumeCollection.VolumeCollectionCollection.#VolumeCollection.VolumeCollectionCollection",
+  "@odata.type": "#VolumeCollection.VolumeCollection",
   "Name": "Volume Collection",
   "Members": [
     {

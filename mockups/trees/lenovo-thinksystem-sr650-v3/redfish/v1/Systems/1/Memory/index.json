@@ -1,6 +1,6 @@
 {
   "@odata.id": "/redfish/v1/Systems/1/Memory",
-  "@odata.type": "##MemoryCollection.MemoryCollectionCollection.#MemoryCollection.MemoryCollectionCollection",
+  "@odata.type": "#MemoryCollection.MemoryCollection",
   "Name": "Memory Collection",
   "Members": [
     {

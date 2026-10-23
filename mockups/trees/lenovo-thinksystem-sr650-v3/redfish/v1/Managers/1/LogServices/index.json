@@ -1,6 +1,6 @@
 {
   "@odata.id": "/redfish/v1/Managers/1/LogServices",
-  "@odata.type": "##LogServiceCollection.LogServiceCollectionCollection.#LogServiceCollection.LogServiceCollectionCollection",
+  "@odata.type": "#LogServiceCollection.LogServiceCollection",
   "Name": "Log Service Collection",
   "Members": [],
   "Members@odata.count": 0

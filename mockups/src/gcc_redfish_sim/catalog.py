@@ -47,15 +47,47 @@ MODELS: dict[str, ModelSpec] = {
     m.key: m
     for m in [
         ModelSpec("dell-r750", "dell", "PowerEdge R750", 2, "1.15.2", "1.13.2", "7.10.70.00", "R750"),
-        ModelSpec("hpe-dl380-gen10", "hpe", "ProLiant DL380 Gen10", 2, "U30 v2.96 (06/24/2024)",
-                  "U30 v2.80 (05/24/2023)", "3.08", "868703-B21"),
-        ModelSpec("lenovo-sr650-v3", "lenovo", "ThinkSystem SR650 V3", 2, "ESE124B-3.10", "ESE118C-2.20",
-                  "ESX320R-3.30", "7D76CTO1WW"),
+        ModelSpec(
+            "hpe-dl380-gen10",
+            "hpe",
+            "ProLiant DL380 Gen10",
+            2,
+            "U30 v2.96 (06/24/2024)",
+            "U30 v2.80 (05/24/2023)",
+            "3.08",
+            "868703-B21",
+        ),
+        ModelSpec(
+            "lenovo-sr650-v3",
+            "lenovo",
+            "ThinkSystem SR650 V3",
+            2,
+            "ESE124B-3.10",
+            "ESE118C-2.20",
+            "ESX320R-3.30",
+            "7D76CTO1WW",
+        ),
         ModelSpec("dell-r650", "dell", "PowerEdge R650", 1, "1.15.2", "1.13.2", "7.10.70.00", "R650"),
-        ModelSpec("hpe-dl360-gen10", "hpe", "ProLiant DL360 Gen10", 1, "U32 v2.96 (06/24/2024)",
-                  "U32 v2.80 (05/24/2023)", "3.08", "867959-B21"),
-        ModelSpec("lenovo-sr630-v3", "lenovo", "ThinkSystem SR630 V3", 1, "ESE124B-3.10", "ESE118C-2.20",
-                  "ESX320R-3.30", "7D73CTO1WW"),
+        ModelSpec(
+            "hpe-dl360-gen10",
+            "hpe",
+            "ProLiant DL360 Gen10",
+            1,
+            "U32 v2.96 (06/24/2024)",
+            "U32 v2.80 (05/24/2023)",
+            "3.08",
+            "867959-B21",
+        ),
+        ModelSpec(
+            "lenovo-sr630-v3",
+            "lenovo",
+            "ThinkSystem SR630 V3",
+            1,
+            "ESE124B-3.10",
+            "ESE118C-2.20",
+            "ESX320R-3.30",
+            "7D73CTO1WW",
+        ),
     ]
 }
 
@@ -107,40 +139,79 @@ def _dell(spec: ModelSpec, index: int, rng: random.Random) -> ServerState:
     ]
     psu_w = 800 if one_u else 1400
     psus = [
-        Psu(f"PSU.Slot.{n}", f"PS{n} Status", n, f"PWR SPLY,{psu_w}W,RDNT,LTON", f"CNLOD00{_token(f'{index}psu{n}', 9)}",
-            "00.1D.79", psu_w, 231.0, 230.0)
+        Psu(
+            f"PSU.Slot.{n}",
+            f"PS{n} Status",
+            n,
+            f"PWR SPLY,{psu_w}W,RDNT,LTON",
+            f"CNLOD00{_token(f'{index}psu{n}', 9)}",
+            "00.1D.79",
+            psu_w,
+            231.0,
+            230.0,
+        )
         for n in (1, 2)
     ]
     cpus = [Cpu(f"CPU.Socket.{n}", n, "Intel(R) Xeon(R) Gold 6338 CPU @ 2.00GHz", 32, 2000) for n in (1, 2)]
     dimms = [
-        Dimm(f"DIMM.Socket.{bank}{slot}", f"DIMM.Socket.{bank}{slot}", 32768, "Hynix Semiconductor",
-             "HMA84GR7DJR4N-XN", _dimm_serial(rng), 3200)
+        Dimm(
+            f"DIMM.Socket.{bank}{slot}",
+            f"DIMM.Socket.{bank}{slot}",
+            32768,
+            "Hynix Semiconductor",
+            "HMA84GR7DJR4N-XN",
+            _dimm_serial(rng),
+            3200,
+        )
         for bank in "AB"
         for slot in range(1, 9)
     ]
     ctl_id = "RAID.SL.3-1"
     drive_count = 2 if one_u else 4
     drives = [
-        Drive(f"Disk.Bay.{n}", n, f"Solid State Disk 0:1:{n}", "MZ7L3960HCJR0D3",
-              f"S6{_token(f'{index}d{n}', 10)}", 960_197_124_096, "SSD", "SATA", "DSG8",
-              float(rng.randint(80, 99)))
+        Drive(
+            f"Disk.Bay.{n}",
+            n,
+            f"Solid State Disk 0:1:{n}",
+            "MZ7L3960HCJR0D3",
+            f"S6{_token(f'{index}d{n}', 10)}",
+            960_197_124_096,
+            "SSD",
+            "SATA",
+            "DSG8",
+            float(rng.randint(80, 99)),
+        )
         for n in range(drive_count)
     ]
-    volume = Volume(f"Disk.Virtual.0-{ctl_id}", "Virtual Disk 0", "RAID1" if one_u else "RAID10",
-                    960_197_124_096 * drive_count // 2, [d.key for d in drives])
+    volume = Volume(
+        f"Disk.Virtual.0-{ctl_id}",
+        "Virtual Disk 0",
+        "RAID1" if one_u else "RAID10",
+        960_197_124_096 * drive_count // 2,
+        [d.key for d in drives],
+    )
     controller = Controller(ctl_id, "PERC H755 Front", "PERC H755 Front", "52.26.0-5179", drives, [volume])
     nics = [
-        Nic("NIC.Integrated.1-1-1", "Integrated NIC 1 Port 1 Partition 1", _mac("dell", index, 1), 25000, True,
-            [_ip("10.30", index)]),
-        Nic("NIC.Integrated.1-2-1", "Integrated NIC 1 Port 2 Partition 1", _mac("dell", index, 2), 25000, True),
+        Nic(
+            "NIC.Integrated.1-1-1",
+            "Integrated NIC 1 Port 1 Partition 1",
+            _mac("dell", index, 1),
+            25000,
+            True,
+            [_ip("10.30", index)],
+        ),
+        Nic(
+            "NIC.Integrated.1-2-1", "Integrated NIC 1 Port 2 Partition 1", _mac("dell", index, 2), 25000, True
+        ),
         Nic("NIC.Slot.3-1-1", "NIC in Slot 3 Port 1 Partition 1", _mac("dell", index, 3), 10000, False),
         Nic("NIC.Slot.3-2-1", "NIC in Slot 3 Port 2 Partition 1", _mac("dell", index, 4), 10000, False),
     ]
     tag = _token(f"dell{index}", 7)
     firmware = [
         FirmwareEntry(f"Installed-25806-52.26.0-5179__{ctl_id}", "PERC H755 Front", "52.26.0-5179"),
-        FirmwareEntry("Installed-108255-22.31.6__NIC.Integrated.1-1-1", "Broadcom Adv. Dual 25Gb Ethernet",
-                      "22.31.6"),
+        FirmwareEntry(
+            "Installed-108255-22.31.6__NIC.Integrated.1-1-1", "Broadcom Adv. Dual 25Gb Ethernet", "22.31.6"
+        ),
         FirmwareEntry("Installed-104374-00.1D.79__PSU.Slot.1", "PWR SPLY,1400W,RDNT,LTON", "00.1D.79"),
         FirmwareEntry("Installed-27763-1.1.1__CPLD.Embedded.1", "System CPLD", "1.1.1"),
         FirmwareEntry("Previous-159-1.13.2__BIOS.Setup.1-1", "BIOS", spec.bios_old, updateable=False),
@@ -150,13 +221,29 @@ def _dell(spec: ModelSpec, index: int, rng: random.Random) -> ServerState:
         LogEntry("2", STATIC_EVENT_TIME, "OK", "The system inventory was updated successfully.", "SYS1003"),
     ]
     return ServerState(
-        profile="dell", model=spec.model, serial=f"CNIVC00{_token(f'dellsn{index}', 9)}", sku=tag,
-        hostname=f"esx{index:03d}.gcc.local", uuid=str(uuid.UUID(int=rng.getrandbits(128))),
-        asset_tag="", height_mm=43.0 if one_u else 86.8,
-        bios_version=spec.bios_old if index % 5 == 2 else spec.bios, bmc_version=spec.bmc,
-        bmc_mac=_mac("dell", index, 0), bmc_ip=_ip("10.20", index),
-        temps=temps, fans=fans, psus=psus, power_w=320.0, power_capacity_w=psu_w,
-        cpus=cpus, dimms=dimms, controllers=[controller], nics=nics, sel=sel, firmware_extra=firmware,
+        profile="dell",
+        model=spec.model,
+        serial=f"CNIVC00{_token(f'dellsn{index}', 9)}",
+        sku=tag,
+        hostname=f"esx{index:03d}.gcc.local",
+        uuid=str(uuid.UUID(int=rng.getrandbits(128))),
+        asset_tag="",
+        height_mm=43.0 if one_u else 86.8,
+        bios_version=spec.bios_old if index % 5 == 2 else spec.bios,
+        bmc_version=spec.bmc,
+        bmc_mac=_mac("dell", index, 0),
+        bmc_ip=_ip("10.20", index),
+        temps=temps,
+        fans=fans,
+        psus=psus,
+        power_w=320.0,
+        power_capacity_w=psu_w,
+        cpus=cpus,
+        dimms=dimms,
+        controllers=[controller],
+        nics=nics,
+        sel=sel,
+        firmware_extra=firmware,
     )
 
 
@@ -176,8 +263,17 @@ def _hpe(spec: ModelSpec, index: int, rng: random.Random) -> ServerState:
     ]
     fans = [Fan(f"Fan{n}", f"Fan {n}", 3200.0, 10000.0, 32.0, None, None) for n in range(1, fan_count + 1)]
     psus = [
-        Psu(str(n - 1), "HpeServerPowerSupply", n, "865414-B21", f"5WBXK0{_token(f'{index}hpsu{n}', 8)}", "1.00",
-            800, 230.0, 230.0)
+        Psu(
+            str(n - 1),
+            "HpeServerPowerSupply",
+            n,
+            "865414-B21",
+            f"5WBXK0{_token(f'{index}hpsu{n}', 8)}",
+            "1.00",
+            800,
+            230.0,
+            230.0,
+        )
         for n in (1, 2)
     ]
     cpus = [Cpu(str(n), n, "Intel(R) Xeon(R) Gold 6248R CPU @ 3.00GHz", 24, 3000) for n in (1, 2)]
@@ -188,15 +284,35 @@ def _hpe(spec: ModelSpec, index: int, rng: random.Random) -> ServerState:
     ]
     drive_count = 2 if one_u else 4
     drives = [
-        Drive(str(n), n, f"Drive {n}", "VK000960GWSRT", f"S{_token(f'{index}hd{n}', 13)}", 960_197_124_096, "SSD",
-              "SATA", "HPG4", float(rng.randint(80, 99)))
+        Drive(
+            str(n),
+            n,
+            f"Drive {n}",
+            "VK000960GWSRT",
+            f"S{_token(f'{index}hd{n}', 13)}",
+            960_197_124_096,
+            "SSD",
+            "SATA",
+            "HPG4",
+            float(rng.randint(80, 99)),
+        )
         for n in range(drive_count)
     ]
-    volume = Volume("1", "Logical Drive 1", "RAID1" if one_u else "RAID5",
-                    960_197_124_096 * (drive_count - 1) if not one_u else 960_197_124_096,
-                    [d.key for d in drives])
-    controller = Controller("DE00A000", "HPE Smart Array P408i-a SR Gen10", "HPE Smart Array P408i-a SR Gen10",
-                            "7.43", drives, [volume])
+    volume = Volume(
+        "1",
+        "Logical Drive 1",
+        "RAID1" if one_u else "RAID5",
+        960_197_124_096 * (drive_count - 1) if not one_u else 960_197_124_096,
+        [d.key for d in drives],
+    )
+    controller = Controller(
+        "DE00A000",
+        "HPE Smart Array P408i-a SR Gen10",
+        "HPE Smart Array P408i-a SR Gen10",
+        "7.43",
+        drives,
+        [volume],
+    )
     nics = [
         Nic(str(n), f"NIC {n}", _mac("hpe", index, n), 10000, n <= 2, [_ip("10.30", index)] if n == 1 else [])
         for n in range(1, 5)
@@ -211,17 +327,35 @@ def _hpe(spec: ModelSpec, index: int, rng: random.Random) -> ServerState:
         FirmwareEntry("9", "Power Supply Firmware", "1.00"),
     ]
     sel = [
-        LogEntry("1", STATIC_EVENT_TIME, "OK", "IML Cleared (iLO 5 user:Administrator)", "IML.0.0.IMLCleared"),
+        LogEntry(
+            "1", STATIC_EVENT_TIME, "OK", "IML Cleared (iLO 5 user:Administrator)", "IML.0.0.IMLCleared"
+        ),
         LogEntry("2", STATIC_EVENT_TIME, "OK", "Firmware flashed (System ROM)", "IML.0.0.FirmwareFlashed"),
     ]
     return ServerState(
-        profile="hpe", model=spec.model, serial=f"CZJ{_token(f'hpesn{index}', 7)}", sku=spec.sku,
-        hostname=f"esx{index:03d}.gcc.local", uuid=str(uuid.UUID(int=rng.getrandbits(128))),
-        asset_tag="", height_mm=43.0 if one_u else 87.0,
-        bios_version=spec.bios_old if index % 5 == 2 else spec.bios, bmc_version=spec.bmc,
-        bmc_mac=_mac("hpe", index, 0), bmc_ip=_ip("10.20", index),
-        temps=temps, fans=fans, psus=psus, power_w=280.0, power_capacity_w=800,
-        cpus=cpus, dimms=dimms, controllers=[controller], nics=nics, sel=sel, firmware_extra=firmware,
+        profile="hpe",
+        model=spec.model,
+        serial=f"CZJ{_token(f'hpesn{index}', 7)}",
+        sku=spec.sku,
+        hostname=f"esx{index:03d}.gcc.local",
+        uuid=str(uuid.UUID(int=rng.getrandbits(128))),
+        asset_tag="",
+        height_mm=43.0 if one_u else 87.0,
+        bios_version=spec.bios_old if index % 5 == 2 else spec.bios,
+        bmc_version=spec.bmc,
+        bmc_mac=_mac("hpe", index, 0),
+        bmc_ip=_ip("10.20", index),
+        temps=temps,
+        fans=fans,
+        psus=psus,
+        power_w=280.0,
+        power_capacity_w=800,
+        cpus=cpus,
+        dimms=dimms,
+        controllers=[controller],
+        nics=nics,
+        sel=sel,
+        firmware_extra=firmware,
     )
 
 
@@ -245,8 +379,17 @@ def _lenovo(spec: ModelSpec, index: int, rng: random.Random) -> ServerState:
     ]
     psu_w = 750 if one_u else 1100
     psus = [
-        Psu(str(n), f"Power Supply {n}", n, f"SP57A{_token(f'lpm{psu_w}', 5, '0123456789')}",
-            f"D1DG{_token(f'{index}lpsu{n}', 8)}", "7.36", psu_w, 229.0, 230.0)
+        Psu(
+            str(n),
+            f"Power Supply {n}",
+            n,
+            f"SP57A{_token(f'lpm{psu_w}', 5, '0123456789')}",
+            f"D1DG{_token(f'{index}lpsu{n}', 8)}",
+            "7.36",
+            psu_w,
+            229.0,
+            230.0,
+        )
         for n in (1, 2)
     ]
     cpus = [Cpu(str(n), n, "Intel(R) Xeon(R) Gold 6430", 32, 2100) for n in (1, 2)]
@@ -256,24 +399,53 @@ def _lenovo(spec: ModelSpec, index: int, rng: random.Random) -> ServerState:
     ]
     drive_count = 2 if one_u else 4
     drives = [
-        Drive(f"Disk.{n}", n, f"Drive {n}", "MZ7L3480HCHQ", f"S6K{_token(f'{index}ld{n}', 10)}", 480_103_981_056,
-              "SSD", "SATA", "JXTC604Q", float(rng.randint(80, 99)))
+        Drive(
+            f"Disk.{n}",
+            n,
+            f"Drive {n}",
+            "MZ7L3480HCHQ",
+            f"S6K{_token(f'{index}ld{n}', 10)}",
+            480_103_981_056,
+            "SSD",
+            "SATA",
+            "JXTC604Q",
+            float(rng.randint(80, 99)),
+        )
         for n in range(drive_count)
     ]
-    volume = Volume("Volume0", "Virtual Disk 0", "RAID1" if one_u else "RAID10",
-                    480_103_981_056 * drive_count // 2, [d.key for d in drives])
-    controller = Controller("RAID_Slot1", "RAID 940-8i", "ThinkSystem RAID 940-8i 4GB Flash PCIe Gen4 12Gb Adapter",
-                            "52.24.0-4763", drives, [volume])
+    volume = Volume(
+        "Volume0",
+        "Virtual Disk 0",
+        "RAID1" if one_u else "RAID10",
+        480_103_981_056 * drive_count // 2,
+        [d.key for d in drives],
+    )
+    controller = Controller(
+        "RAID_Slot1",
+        "RAID 940-8i",
+        "ThinkSystem RAID 940-8i 4GB Flash PCIe Gen4 12Gb Adapter",
+        "52.24.0-4763",
+        drives,
+        [volume],
+    )
     nics = [
-        Nic(f"NIC{n}", f"Broadcom 57414 Port {n}", _mac("lenovo", index, n), 25000, n <= 2,
-            [_ip("10.30", index)] if n == 1 else [])
+        Nic(
+            f"NIC{n}",
+            f"Broadcom 57414 Port {n}",
+            _mac("lenovo", index, n),
+            25000,
+            n <= 2,
+            [_ip("10.30", index)] if n == 1 else [],
+        )
         for n in range(1, 5)
     ]
     firmware = [
         FirmwareEntry("BMC-Backup", "XCC Backup Firmware", "ESX316J-3.10", updateable=False),
         FirmwareEntry("LXPM", "LXPM Diagnostic Software", "EST312D-3.10"),
         FirmwareEntry("Slot_1.Bundle", "ThinkSystem RAID 940-8i", "52.24.0-4763"),
-        FirmwareEntry("OCP.Bundle", "Broadcom 57414 10/25GbE SFP28 2-port OCP Ethernet Adapter", "229.1.123.0"),
+        FirmwareEntry(
+            "OCP.Bundle", "Broadcom 57414 10/25GbE SFP28 2-port OCP Ethernet Adapter", "229.1.123.0"
+        ),
         FirmwareEntry("PSU1", "Power Supply 1", "7.36"),
     ]
     sel = [
@@ -281,13 +453,29 @@ def _lenovo(spec: ModelSpec, index: int, rng: random.Random) -> ServerState:
         LogEntry("2", STATIC_EVENT_TIME, "OK", "System inventory collection completed.", "FQXSPSE4038I"),
     ]
     return ServerState(
-        profile="lenovo", model=spec.model, serial=f"J30{_token(f'lensn{index}', 5)}", sku=spec.sku,
-        hostname=f"esx{index:03d}.gcc.local", uuid=str(uuid.UUID(int=rng.getrandbits(128))),
-        asset_tag="", height_mm=43.0 if one_u else 86.5,
-        bios_version=spec.bios_old if index % 5 == 2 else spec.bios, bmc_version=spec.bmc,
-        bmc_mac=_mac("lenovo", index, 0), bmc_ip=_ip("10.20", index),
-        temps=temps, fans=fans, psus=psus, power_w=340.0, power_capacity_w=psu_w,
-        cpus=cpus, dimms=dimms, controllers=[controller], nics=nics, sel=sel, firmware_extra=firmware,
+        profile="lenovo",
+        model=spec.model,
+        serial=f"J30{_token(f'lensn{index}', 5)}",
+        sku=spec.sku,
+        hostname=f"esx{index:03d}.gcc.local",
+        uuid=str(uuid.UUID(int=rng.getrandbits(128))),
+        asset_tag="",
+        height_mm=43.0 if one_u else 86.5,
+        bios_version=spec.bios_old if index % 5 == 2 else spec.bios,
+        bmc_version=spec.bmc,
+        bmc_mac=_mac("lenovo", index, 0),
+        bmc_ip=_ip("10.20", index),
+        temps=temps,
+        fans=fans,
+        psus=psus,
+        power_w=340.0,
+        power_capacity_w=psu_w,
+        cpus=cpus,
+        dimms=dimms,
+        controllers=[controller],
+        nics=nics,
+        sel=sel,
+        firmware_extra=firmware,
     )
 
 
