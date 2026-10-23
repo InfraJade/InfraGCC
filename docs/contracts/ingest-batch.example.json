@@ -6,39 +6,72 @@
   "servers": [
     {
       "server_id": 1,
-      "polled_at": "2026-10-22T10:00:05Z",
+      "polled_at": "2026-10-22T10:00:01Z",
       "readings": [
-        {"time": "2026-10-22T10:00:01Z", "metric": "inlet_temp_c", "component": "", "value": 22.5, "status": "OK"},
-        {"time": "2026-10-22T10:00:01Z", "metric": "exhaust_temp_c", "component": "", "value": 38.0, "status": "OK"},
-        {"time": "2026-10-22T10:00:01Z", "metric": "cpu_temp_c", "component": "CPU1", "value": 61.0, "status": "OK"},
-        {"time": "2026-10-22T10:00:01Z", "metric": "fan_rpm", "component": "Fan 1", "value": 7440.0, "status": "OK"},
-        {"time": "2026-10-22T10:00:01Z", "metric": "power_w", "component": "", "value": 412.0, "status": null},
-        {"time": "2026-10-22T10:00:01Z", "metric": "psu_input_v", "component": "PSU 1", "value": 231.0, "status": "OK"},
         {"time": "2026-10-22T10:00:01Z", "metric": "power_state", "component": "", "value": 1, "status": "On"},
         {"time": "2026-10-22T10:00:01Z", "metric": "system_health", "component": "", "value": 0, "status": "OK"},
-        {"time": "2026-10-22T10:00:01Z", "metric": "bmc_reachable", "component": "", "value": 1, "status": "Reachable"},
-        {"time": "2026-10-22T10:00:01Z", "metric": "psu_health", "component": "PSU 2", "value": 1, "status": "Warning"},
-        {"time": "2026-10-22T10:00:01Z", "metric": "nic_link", "component": "NIC 1", "value": 1, "status": "Up"}
+        {"time": "2026-10-22T10:00:01Z", "metric": "bmc_health", "component": "", "value": 0, "status": "OK"},
+        {"time": "2026-10-22T10:00:01Z", "metric": "inlet_temp_c", "component": "", "value": 23.0, "status": "OK"},
+        {"time": "2026-10-22T10:00:01Z", "metric": "exhaust_temp_c", "component": "", "value": 38.0, "status": "OK"},
+        {"time": "2026-10-22T10:00:01Z", "metric": "cpu_temp_c", "component": "CPU1", "value": 55.0, "status": "OK"},
+        {"time": "2026-10-22T10:00:01Z", "metric": "dimm_temp_c", "component": "DIMM A1", "value": 38.0, "status": "OK"},
+        {"time": "2026-10-22T10:00:01Z", "metric": "fan_rpm", "component": "Fan 1", "value": 6800.0, "status": "OK"},
+        {"time": "2026-10-22T10:00:01Z", "metric": "power_w", "component": "", "value": 320.0, "status": "OK"},
+        {"time": "2026-10-22T10:00:01Z", "metric": "psu_input_v", "component": "PSU 1", "value": 231.0, "status": "OK"},
+        {"time": "2026-10-22T10:00:01Z", "metric": "fan_health", "component": "Fan 1", "value": 0, "status": "OK"},
+        {"time": "2026-10-22T10:00:01Z", "metric": "fan_redundancy", "component": "", "value": 0, "status": "OK"},
+        {"time": "2026-10-22T10:00:01Z", "metric": "psu_health", "component": "PSU 1", "value": 0, "status": "OK"},
+        {"time": "2026-10-22T10:00:01Z", "metric": "psu_redundancy", "component": "", "value": 0, "status": "OK"},
+        {"time": "2026-10-22T10:00:01Z", "metric": "power_capacity_w", "component": "", "value": 1400.0, "status": null},
+        {"time": "2026-10-22T10:00:01Z", "metric": "cpu_health", "component": "CPU1", "value": 0, "status": "OK"},
+        {"time": "2026-10-22T10:00:01Z", "metric": "memory_health", "component": "DIMM A1", "value": 0, "status": "OK"},
+        {"time": "2026-10-22T10:00:01Z", "metric": "storage_health", "component": "RAID.SL.3-1", "value": 0, "status": "OK"},
+        {"time": "2026-10-22T10:00:01Z", "metric": "drive_health", "component": "Disk 0", "value": 0, "status": "OK"},
+        {"time": "2026-10-22T10:00:01Z", "metric": "drive_life_pct", "component": "Disk 0", "value": 89.0, "status": null},
+        {"time": "2026-10-22T10:00:01Z", "metric": "volume_health", "component": "Volume 0", "value": 0, "status": "OK"},
+        {"time": "2026-10-22T10:00:01Z", "metric": "nic_link", "component": "NIC 1", "value": 1, "status": "Up"},
+        {"time": "2026-10-22T10:00:01Z", "metric": "bmc_reachable", "component": "", "value": 1, "status": "Reachable"}
       ],
       "bmc_limits": [
-        {"metric": "cpu_temp_c", "component": "CPU1", "lower_critical": null, "lower_warning": null, "upper_warning": 85.0, "upper_critical": 95.0}
+        {"metric": "inlet_temp_c", "component": "", "lower_critical": null, "lower_warning": null, "upper_warning": 42.0, "upper_critical": 47.0},
+        {"metric": "exhaust_temp_c", "component": "", "lower_critical": null, "lower_warning": null, "upper_warning": 70.0, "upper_critical": 75.0}
       ],
       "events": [
-        {"entry_id": "Sel/2", "time": "2026-10-01T08:00:00Z", "severity": "Critical", "message": "The system inlet temperature is greater than the upper critical threshold.", "message_id": "TMP0120"}
+        {"entry_id": "Sel/1", "time": "2026-10-01T08:00:00Z", "severity": "OK", "message": "Log cleared.", "message_id": "SEL9901"},
+        {"entry_id": "Sel/2", "time": "2026-10-01T08:00:00Z", "severity": "OK", "message": "The system inventory was updated successfully.", "message_id": "SYS1003"}
       ],
       "identity": {
-        "vendor": "Dell", "model": "PowerEdge R750", "serial": "7XK2M93", "sku": "R750",
-        "hostname": "pnq1-a01-r750-01", "uuid": "4c4c4544-0058-4b10-8032-b7c04f4d3933", "asset_tag": null,
-        "bmc_model": "iDRAC9", "bmc_firmware": "7.10.70.00", "bmc_mac": "D0:8E:79:00:00:10",
-        "system_path": "/redfish/v1/Systems/System.Embedded.1", "host_ips": ["10.20.1.11"]
+        "vendor": "Dell",
+        "model": "PowerEdge R750",
+        "serial": "JQGQVYQ",
+        "sku": "JQGQVYQ",
+        "hostname": "esx9001.gcc.local",
+        "uuid": "52f0ae33-e9be-289d-5880-cc0ca73279dd",
+        "asset_tag": null,
+        "bmc_model": "iDRAC9",
+        "bmc_firmware": "7.10.70.00",
+        "bmc_mac": "D0:8E:79:02:32:90",
+        "system_path": "/redfish/v1/Systems/System.Embedded.1",
+        "host_ips": ["10.30.45.21"]
       },
       "components": [
-        {"type": "cpu", "name": "CPU1", "model": "Intel(R) Xeon(R) Gold 6338 CPU @ 2.00GHz", "manufacturer": "Intel", "serial": null, "capacity": 32, "capacity_unit": "cores", "firmware_version": null, "location": "CPU.Socket.1", "link_up": null, "extra": {}},
-        {"type": "nic", "name": "NIC 1", "model": "Broadcom BCM57414", "manufacturer": "Broadcom", "serial": null, "capacity": 25000, "capacity_unit": "Mbps", "firmware_version": null, "location": "NIC.Integrated.1-1-1", "link_up": true, "extra": {"mac": "D0:8E:79:00:00:11"}}
+        {"type": "cpu", "name": "CPU1", "model": "Intel(R) Xeon(R) Gold 6338 CPU @ 2.00GHz", "manufacturer": "Intel", "serial": null, "capacity": 32.0, "capacity_unit": "cores", "firmware_version": null, "location": "CPU.Socket.1", "link_up": null, "extra": {"threads": 64, "max_speed_mhz": 2000}},
+        {"type": "dimm", "name": "DIMM A1", "model": "HMA84GR7DJR4N-XN", "manufacturer": "Hynix Semiconductor", "serial": "890A1E29", "capacity": 32.0, "capacity_unit": "GiB", "firmware_version": null, "location": "DIMM.Socket.A1", "link_up": null, "extra": {"type": "DDR4", "speed_mhz": 3200}},
+        {"type": "storage_controller", "name": "RAID.SL.3-1", "model": "PERC H755 Front", "manufacturer": null, "serial": null, "capacity": null, "capacity_unit": null, "firmware_version": "52.26.0-5179", "location": "RAID.SL.3-1", "link_up": null, "extra": {}},
+        {"type": "drive", "name": "Disk 0", "model": "MZ7L3960HCJR0D3", "manufacturer": null, "serial": "S6SWD47J71JH", "capacity": 960.2, "capacity_unit": "GB", "firmware_version": "DSG8", "location": "Bay 0", "link_up": null, "extra": {"media": "SSD", "protocol": "SATA", "controller": "RAID.SL.3-1"}},
+        {"type": "volume", "name": "Volume 0", "model": "Virtual Disk 0", "manufacturer": null, "serial": null, "capacity": 1920.4, "capacity_unit": "GB", "firmware_version": null, "location": "Disk.Virtual.0-RAID.SL.3-1", "link_up": null, "extra": {"raid": "RAID10", "controller": "RAID.SL.3-1"}},
+        {"type": "psu", "name": "PSU 1", "model": "PWR SPLY,1400W,RDNT,LTON", "manufacturer": null, "serial": "CNLOD00STW5AWX2N", "capacity": 1400.0, "capacity_unit": "W", "firmware_version": "00.1D.79", "location": "Bay 1", "link_up": null, "extra": {}},
+        {"type": "fan", "name": "Fan 1", "model": null, "manufacturer": null, "serial": null, "capacity": null, "capacity_unit": null, "firmware_version": null, "location": "Fan.Embedded.1A", "link_up": null, "extra": {}},
+        {"type": "nic", "name": "NIC 1", "model": "Integrated NIC 1 Port 1 Partition 1", "manufacturer": null, "serial": null, "capacity": 25000.0, "capacity_unit": "Mbps", "firmware_version": null, "location": "NIC.Integrated.1-1-1", "link_up": true, "extra": {"mac": "D0:8E:79:02:32:91"}}
       ],
       "firmware": [
         {"component": "BIOS", "component_key": "BIOS", "component_type": "bios", "version": "1.15.2"},
-        {"component": "Integrated Dell Remote Access Controller", "component_key": "BMC", "component_type": "bmc", "version": "7.10.70.00"}
+        {"component": "Integrated Dell Remote Access Controller", "component_key": "BMC", "component_type": "bmc", "version": "7.10.70.00"},
+        {"component": "PERC H755 Front", "component_key": "RAID", "component_type": "storage_controller", "version": "52.26.0-5179"},
+        {"component": "Broadcom Adv. Dual 25Gb Ethernet", "component_key": "NIC", "component_type": "nic", "version": "22.31.6"},
+        {"component": "PWR SPLY,1400W,RDNT,LTON", "component_key": "PSU", "component_type": "psu", "version": "00.1D.79"},
+        {"component": "System CPLD", "component_key": "CPLD", "component_type": "cpld", "version": "1.1.1"},
+        {"component": "Disk 0", "component_key": "DRIVE:MZ7L3960HCJR0D3", "component_type": "drive", "version": "DSG8"}
       ]
     }
   ]
