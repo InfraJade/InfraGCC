@@ -1,0 +1,149 @@
+# Throwaway stack for verifying the Superset build in isolation (not part of the product compose).
+#
+#   docker compose -f superset/compose.verify.yaml up -d --build timescaledb redis keycloak mailpit
+#   cd backend && MIGRATION_DATABASE_URL=postgresql+psycopg://gcc_owner:dev-owner-pw@localhost:25433/gcc \
+#       uv run alembic upgrade head && DATABASE_URL=... uv run python -m app.seed dev
+#   docker compose -f superset/compose.verify.yaml exec -T timescaledb psql -U gcc_owner -d gcc < superset/verify/sample_data.sql
+#   docker compose -f superset/compose.verify.yaml up -d superset-init superset superset-worker superset-beat
+#   python superset/verify_superset.py --url http://localhost:28090 --sso analyst:demo1234 --expect-role Alpha \
+#       --local-login --mailpit http://localhost:28025
+#   docker compose -f superset/compose.verify.yaml down -v
+#
+# Host ports: Postgres 25433, Superset 28090, Keycloak 28080, mailpit 28025. Keycloak imports the realm from
+# GCC_VERIFY_REALM (default: infra's realm); its superset client must allow http://localhost:28090/* redirects.
+
+name: gccdev-superset
+
+x-superset-env: &superset-env
+  SUPERSET_ENV: production
+  SUPERSET_SECRET_KEY: verify-superset-secret
+  SUPERSET_METADATA_DB_URI: postgresql+psycopg2://superset_meta:dev-superset-meta-pw@timescaledb:5432/superset_meta
+  SUPERSET_ANALYTICS_DB_URI: postgresql+psycopg2://gcc_superset_ro:dev-superset-ro-pw@timescaledb:5432/gcc
+  SUPERSET_CACHE_REDIS_URL: redis://redis:6379/2
+  SUPERSET_CELERY_BROKER_URL: redis://redis:6379/3
+  SUPERSET_RESULTS_REDIS_URL: redis://redis:6379/4
+  SUPERSET_PUBLIC_URL: http://localhost:28090
+  SUPERSET_WEBDRIVER_BASEURL: http://superset:8088/
+  SUPERSET_UI_ADMIN_PASSWORD: dev-superset-admin
+  SUPERSET_EMBED_PASSWORD: dev-superset-embed-pw
+  SUPERSET_EMBED_ALLOWED_ORIGINS: http://localhost:3000,http://localhost:23000
+  SUPERSET_AUTH: ${SUPERSET_AUTH:-oauth}
+  SUPERSET_OIDC_ISSUER: http://localhost:28080/realms/gcc
+  SUPERSET_OIDC_INTERNAL_URL: http://keycloak:8080/realms/gcc
+  SUPERSET_CAPACITY_REPORT_CRON: "* * * * *"
+  SMTP_HOST: mailpit
+  SMTP_PORT: "1025"
+
+x-superset: &superset
+  build:
+    context: .
+  image: gcc-superset:dev
+  environment:
+    <<: *superset-env
+  depends_on:
+    timescaledb:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+
+services:
+  timescaledb:
+    image: timescale/timescaledb:2.17.2-pg16
+    container_name: gccdev-superset-db
+    environment:
+      POSTGRES_USER: gcc_owner
+      POSTGRES_PASSWORD: dev-owner-pw
+      POSTGRES_DB: gcc
+      GCC_APP_DB_PASSWORD: dev-app-pw
+      GCC_INGEST_DB_PASSWORD: dev-ingest-pw
+      GCC_SUPERSET_RO_DB_PASSWORD: dev-superset-ro-pw
+      SUPERSET_META_DB_PASSWORD: dev-superset-meta-pw
+      KEYCLOAK_DB_PASSWORD: dev-keycloak-db-pw
+      TS_TUNE_MEMORY: 1GB
+    ports:
+      - "127.0.0.1:25433:5432"
+    volumes:
+      - ../infra/timescale/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gcc_owner -d gcc"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7.4-alpine
+    container_name: gccdev-superset-redis
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0.7
+    container_name: gccdev-superset-keycloak
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: dev-keycloak-admin
+      KC_HOSTNAME: http://localhost:28080
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      KC_HTTP_ENABLED: "true"
+    ports:
+      - "127.0.0.1:28080:8080"
+    volumes:
+      - ${GCC_VERIFY_REALM:-../infra/keycloak/gcc-realm.json}:/opt/keycloak/data/import/gcc-realm.json:ro
+
+  mailpit:
+    image: axllent/mailpit:v1.21
+    container_name: gccdev-superset-mailpit
+    ports:
+      - "127.0.0.1:28025:8025"
+
+  superset-init:
+    <<: *superset
+    container_name: gccdev-superset-init
+    command: ["/app/docker/gcc-superset-init.sh"]
+
+  superset:
+    <<: *superset
+    container_name: gccdev-superset-web
+    ports:
+      - "127.0.0.1:28090:8088"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://127.0.0.1:8088/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    depends_on:
+      superset-init:
+        condition: service_completed_successfully
+
+  superset-worker:
+    <<: *superset
+    container_name: gccdev-superset-worker
+    command: ["celery", "--app=superset.tasks.celery_app:app", "worker", "--pool=prefork", "-O", "fair", "-c", "2", "--loglevel=INFO"]
+    healthcheck:
+      test: ["CMD-SHELL", "celery --app=superset.tasks.celery_app:app inspect ping -d celery@$$HOSTNAME --timeout 10 | grep -q pong"]
+      interval: 60s
+      timeout: 30s
+      retries: 3
+      start_period: 60s
+    depends_on:
+      superset-init:
+        condition: service_completed_successfully
+
+  superset-beat:
+    <<: *superset
+    container_name: gccdev-superset-beat
+    command: ["celery", "--app=superset.tasks.celery_app:app", "beat", "--pidfile", "/tmp/celerybeat.pid", "--schedule", "/tmp/celerybeat-schedule", "--loglevel=INFO"]
+    healthcheck:
+      test: ["CMD-SHELL", "test -n \"$$(find /tmp/celerybeat-schedule* -mmin -10 2>/dev/null)\""]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+    depends_on:
+      superset-init:
+        condition: service_completed_successfully

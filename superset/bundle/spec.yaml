@@ -1,0 +1,722 @@
+# Jade GCC analytics: the readable source for the Superset import bundle.
+#
+# generate_bundle.py expands this file into a Superset 4.1 "assets" export (metadata.yaml, databases/,
+# datasets/, charts/, dashboards/) with stable uuid5 identifiers, full chart params and the saved
+# query_context every chart needs for /api/v1/chart/{id}/data and embedded (guest) rendering.
+#
+# Data model: the six views in schema `reporting` (backend/alembic/versions/0005_*). Every view has
+# `site_id` and `site_code`, so a guest token's RLS clause `site_id IN (...)` filters every dataset.
+#
+# Chart filters:  [column, operator, value]   operators: ==, !=, IN, NOT IN, >, <, >=, <=, IS NULL, IS NOT NULL
+#                 {sql: "<where clause>"}     free-form SQL
+# time_range:     any Superset time range ("Last day", "Last week", "Last month", "No filter", or advanced
+#                 "DATEADD(DATETIME(\"now\"), -1, hour) : now"); applied to the dataset's time column.
+
+database:
+  name: GCC Analytics
+  # Password is masked here and supplied at import time from SUPERSET_ANALYTICS_DB_URI (init_superset.py).
+  sqlalchemy_uri: postgresql+psycopg2://gcc_superset_ro:XXXXXXXXXX@timescaledb:5432/gcc
+  expose_in_sqllab: true
+  allow_run_async: false
+  allow_ctas: false
+  allow_cvas: false
+  allow_dml: false
+  cache_timeout: 300
+
+column_sets:
+  server_dims:
+    - [server_name, VARCHAR, Server]
+    - [server_serial, VARCHAR, Serial number]
+    - [site_id, INTEGER, Site ID]
+    - [site_code, VARCHAR, Site]
+    - [site_name, VARCHAR, Site name]
+    - [room_id, INTEGER, Room ID]
+    - [room_name, VARCHAR, Room]
+    - [rack_id, INTEGER, Rack ID]
+    - [rack_name, VARCHAR, Rack]
+    - [position_u, SMALLINT, Position (U)]
+    - [vendor, VARCHAR, Vendor]
+    - [model, VARCHAR, Model]
+  reading_cols:
+    - [rack_power_capacity_w, INTEGER, Rack power capacity (W)]
+    - [metric, VARCHAR, Metric code]
+    - [metric_name, VARCHAR, Metric]
+    - [unit, VARCHAR, Unit]
+    - [category, VARCHAR, Category]
+    - [component, TEXT, Part]
+    - [avg_value, DOUBLE PRECISION, Average value]
+    - [min_value, DOUBLE PRECISION, Minimum value]
+    - [max_value, DOUBLE PRECISION, Maximum value]
+    - [samples, BIGINT, Samples]
+
+metric_sets:
+  readings:
+    count: {expression: "COUNT(*)", label: Rows}
+    avg_value: {expression: "AVG(avg_value)", label: Average, d3format: ",.1f"}
+    max_value: {expression: "MAX(max_value)", label: Maximum, d3format: ",.1f"}
+    min_value: {expression: "MIN(min_value)", label: Minimum, d3format: ",.1f"}
+    servers: {expression: "COUNT(DISTINCT server_id)", label: Servers, d3format: ",d"}
+    total_power_kw:
+      expression: "SUM(avg_value) / NULLIF(COUNT(DISTINCT time), 0) / 1000.0"
+      label: Average total power (kW)
+      d3format: ",.2f"
+      description: Filter metric = power_w. Sum of server power, averaged over the time buckets in each group.
+    rack_capacity_kw:
+      expression: "MAX(rack_power_capacity_w) / 1000.0"
+      label: Rack capacity (kW)
+      d3format: ",.1f"
+    rack_utilisation_pct:
+      expression: "100.0 * SUM(avg_value) / NULLIF(COUNT(DISTINCT time), 0) / NULLIF(MAX(rack_power_capacity_w), 0)"
+      label: Utilisation of rack capacity (%)
+      d3format: ",.1f"
+      description: Filter metric = power_w and group by rack.
+    rack_headroom_kw:
+      expression: "(MAX(rack_power_capacity_w) - SUM(avg_value) / NULLIF(COUNT(DISTINCT time), 0)) / 1000.0"
+      label: Headroom (kW)
+      d3format: ",.2f"
+      description: Filter metric = power_w and group by rack.
+    peak_w: {expression: "MAX(max_value)", label: Peak (W), d3format: ",.0f"}
+    inlet_avg:
+      expression: "AVG(CASE WHEN metric = 'inlet_temp_c' THEN avg_value END)"
+      label: Inlet avg (°C)
+      d3format: ",.1f"
+    inlet_max:
+      expression: "MAX(CASE WHEN metric = 'inlet_temp_c' THEN max_value END)"
+      label: Inlet max (°C)
+      d3format: ",.1f"
+    exhaust_avg:
+      expression: "AVG(CASE WHEN metric = 'exhaust_temp_c' THEN avg_value END)"
+      label: Exhaust avg (°C)
+      d3format: ",.1f"
+    exhaust_max:
+      expression: "MAX(CASE WHEN metric = 'exhaust_temp_c' THEN max_value END)"
+      label: Exhaust max (°C)
+      d3format: ",.1f"
+    delta_t:
+      expression: "AVG(CASE WHEN metric = 'exhaust_temp_c' THEN avg_value END) - AVG(CASE WHEN metric = 'inlet_temp_c' THEN avg_value END)"
+      label: Exhaust − inlet (°C)
+      d3format: ",.1f"
+    life_left_min: {expression: "MIN(min_value)", label: Life left (%), d3format: ",.0f"}
+
+datasets:
+  v_readings_5m:
+    description: 5-minute average/min/max per server, metric and part (rollup readings_5m), with location and model.
+    main_dttm_col: time
+    columns:
+      - [time, TIMESTAMP WITH TIME ZONE, Time, dttm]
+      - [server_id, INTEGER, Server ID]
+      - use: server_dims
+      - use: reading_cols
+    metrics: {use: readings}
+  v_readings_1h:
+    description: Same as v_readings_5m at 1-hour grain (rollup readings_1h), for long ranges.
+    main_dttm_col: time
+    columns:
+      - [time, TIMESTAMP WITH TIME ZONE, Time, dttm]
+      - [server_id, INTEGER, Server ID]
+      - use: server_dims
+      - use: reading_cols
+    metrics: {use: readings}
+  v_server_health:
+    description: Current health per server and part, with the server's worst health.
+    main_dttm_col: null
+    columns:
+      - [server_id, INTEGER, Server ID]
+      - use: server_dims
+      - [server_status, VARCHAR, Server status]
+      - [metric, VARCHAR, Metric code]
+      - [metric_name, VARCHAR, Check]
+      - [category, VARCHAR, Category]
+      - [component, TEXT, Part]
+      - [health, VARCHAR, Health]
+      - [health_rank, INTEGER, Health rank]
+      - [state, VARCHAR, State]
+      - [since, TIMESTAMP WITH TIME ZONE, Since, dttm]
+      - [updated_at, TIMESTAMP WITH TIME ZONE, Updated, dttm]
+      - [server_worst_health, TEXT, Server health]
+    metrics:
+      count: {expression: "COUNT(*)", label: Rows}
+      servers: {expression: "COUNT(DISTINCT server_id)", label: Servers, d3format: ",d"}
+      unhealthy_parts:
+        expression: "COUNT(*) FILTER (WHERE health IN ('Warning', 'Critical'))"
+        label: Unhealthy parts
+        d3format: ",d"
+      critical_servers:
+        expression: "COUNT(DISTINCT server_id) FILTER (WHERE server_worst_health = 'Critical')"
+        label: Servers critical
+        d3format: ",d"
+      warning_servers:
+        expression: "COUNT(DISTINCT server_id) FILTER (WHERE server_worst_health = 'Warning')"
+        label: Servers warning
+        d3format: ",d"
+      affected_servers:
+        expression: "COUNT(DISTINCT server_id) FILTER (WHERE health IN ('Warning', 'Critical'))"
+        label: Servers affected
+        d3format: ",d"
+  v_alerts:
+    description: Alerts with open, acknowledge and resolve times.
+    main_dttm_col: opened_at
+    columns:
+      - [alert_id, BIGINT, Alert ID]
+      - [rule_id, INTEGER, Rule ID]
+      - [rule_name, VARCHAR, Rule]
+      - [rule_type, VARCHAR, Rule type]
+      - [route, VARCHAR, Route]
+      - [server_id, INTEGER, Server ID]
+      - [server_name, VARCHAR, Server]
+      - [collector_id, INTEGER, Collector ID]
+      - [collector_name, VARCHAR, Collector]
+      - [site_id, INTEGER, Site ID]
+      - [site_code, VARCHAR, Site]
+      - [site_name, VARCHAR, Site name]
+      - [room_name, VARCHAR, Room]
+      - [rack_name, VARCHAR, Rack]
+      - [vendor, VARCHAR, Vendor]
+      - [model, VARCHAR, Model]
+      - [metric, VARCHAR, Metric code]
+      - [component, TEXT, Part]
+      - [state, VARCHAR, State]
+      - [severity, VARCHAR, Severity]
+      - [title, VARCHAR, Title]
+      - [muted, BOOLEAN, Muted]
+      - [occurrences, INTEGER, Occurrences]
+      - [opened_at, TIMESTAMP WITH TIME ZONE, Opened, dttm]
+      - [acked_at, TIMESTAMP WITH TIME ZONE, Acknowledged, dttm]
+      - [acked_by, VARCHAR, Acknowledged by]
+      - [resolved_at, TIMESTAMP WITH TIME ZONE, Resolved, dttm]
+      - [seconds_to_ack, NUMERIC, Seconds to acknowledge]
+      - [seconds_to_resolve, NUMERIC, Seconds to resolve]
+    metrics:
+      alerts: {expression: "COUNT(*)", label: Alerts, d3format: ",d"}
+      open_alerts:
+        expression: "COUNT(*) FILTER (WHERE state <> 'resolved')"
+        label: Open alerts
+        d3format: ",d"
+      occurrences: {expression: "SUM(occurrences)", label: Occurrences, d3format: ",d"}
+      median_minutes_to_ack:
+        expression: "PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY seconds_to_ack) / 60.0"
+        label: Median time to acknowledge (min)
+        d3format: ",.1f"
+      median_minutes_to_resolve:
+        expression: "PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY seconds_to_resolve) / 60.0"
+        label: Median time to resolve (min)
+        d3format: ",.1f"
+      avg_minutes_to_ack:
+        expression: "AVG(seconds_to_ack) / 60.0"
+        label: Mean time to acknowledge (min)
+        d3format: ",.1f"
+      avg_minutes_to_resolve:
+        expression: "AVG(seconds_to_resolve) / 60.0"
+        label: Mean time to resolve (min)
+        d3format: ",.1f"
+  v_inventory:
+    description: Servers and their current parts (one row per part; servers without parts appear once).
+    main_dttm_col: null
+    columns:
+      - [server_id, INTEGER, Server ID]
+      - use: server_dims
+      - [height_u, SMALLINT, Height (U)]
+      - [server_status, VARCHAR, Server status]
+      - [bmc_host, VARCHAR, BMC address]
+      - [bmc_model, VARCHAR, BMC]
+      - [last_seen_at, TIMESTAMP WITH TIME ZONE, Last seen, dttm]
+      - [component_id, BIGINT, Part ID]
+      - [component_type, VARCHAR, Part type]
+      - [component_name, VARCHAR, Part]
+      - [component_model, VARCHAR, Part model]
+      - [component_manufacturer, VARCHAR, Manufacturer]
+      - [component_serial, VARCHAR, Part serial]
+      - [component_capacity, DOUBLE PRECISION, Capacity]
+      - [component_capacity_unit, VARCHAR, Capacity unit]
+      - [component_firmware, VARCHAR, Part firmware]
+    metrics:
+      count: {expression: "COUNT(*)", label: Rows}
+      servers: {expression: "COUNT(DISTINCT server_id)", label: Servers, d3format: ",d"}
+      parts: {expression: "COUNT(component_id)", label: Parts, d3format: ",d"}
+  v_firmware_compliance:
+    description: Installed firmware per server and part against the approved baseline for its vendor and model.
+    main_dttm_col: null
+    columns:
+      - [server_id, INTEGER, Server ID]
+      - use: server_dims
+      - [component, TEXT, Firmware item]
+      - [component_key, VARCHAR, Component key]
+      - [component_type, VARCHAR, Part type]
+      - [installed_version, VARCHAR, Installed]
+      - [approved_version, VARCHAR, Approved]
+      - [compliant, BOOLEAN, Compliant]
+      - [collected_at, TIMESTAMP WITH TIME ZONE, Collected, dttm]
+    metrics:
+      items: {expression: "COUNT(*)", label: Firmware items, d3format: ",d"}
+      servers: {expression: "COUNT(DISTINCT server_id)", label: Servers, d3format: ",d"}
+      compliant_items: {expression: "COUNT(*) FILTER (WHERE compliant)", label: On baseline, d3format: ",d"}
+      noncompliant_items:
+        expression: "COUNT(*) FILTER (WHERE compliant = false)"
+        label: Off baseline
+        d3format: ",d"
+      no_baseline_items:
+        expression: "COUNT(*) FILTER (WHERE compliant IS NULL)"
+        label: No baseline
+        d3format: ",d"
+      compliance_pct:
+        expression: "100.0 * COUNT(*) FILTER (WHERE compliant) / NULLIF(COUNT(compliant), 0)"
+        label: Firmware compliance (%)
+        d3format: ",.1f"
+      noncompliant_servers:
+        expression: "COUNT(DISTINCT server_id) FILTER (WHERE compliant = false)"
+        label: Servers off baseline
+        d3format: ",d"
+
+charts:
+  # ---- Data center overview ------------------------------------------------------------------------------
+  ov_servers:
+    title: Servers monitored
+    viz: big_number_total
+    dataset: v_server_health
+    metric: servers
+  ov_critical:
+    title: Servers in Critical health
+    viz: big_number_total
+    dataset: v_server_health
+    metric: critical_servers
+  ov_open_alerts:
+    title: Open alerts
+    viz: big_number_total
+    dataset: v_alerts
+    metric: open_alerts
+    time_range: No filter
+  ov_power_now:
+    title: Total power, last hour (kW)
+    viz: big_number_total
+    dataset: v_readings_5m
+    metric: total_power_kw
+    filters: [[metric, ==, power_w]]
+    time_range: 'DATEADD(DATETIME("now"), -1, hour) : now'
+    format: ",.1f"
+  ov_health_by_site:
+    title: Server health by site
+    viz: bar
+    dataset: v_server_health
+    x_axis: site_code
+    metrics: [servers]
+    groupby: [server_worst_health]
+    stacked: true
+    y_title: Servers
+  ov_alerts_by_severity:
+    title: Open alerts by severity
+    viz: pie
+    dataset: v_alerts
+    metric: alerts
+    groupby: [severity]
+    filters: [[state, "!=", resolved]]
+    time_range: No filter
+  ov_inlet_by_site:
+    title: Average inlet temperature by site (°C)
+    viz: line
+    dataset: v_readings_5m
+    metrics: [avg_value]
+    groupby: [site_code]
+    filters: [[metric, ==, inlet_temp_c]]
+    time_range: Last day
+    y_format: ",.1f"
+  ov_power_by_site:
+    title: Total power draw by site (kW)
+    viz: line
+    dataset: v_readings_5m
+    metrics: [total_power_kw]
+    groupby: [site_code]
+    filters: [[metric, ==, power_w]]
+    time_range: Last day
+    y_format: ",.1f"
+
+  # ---- Thermal -------------------------------------------------------------------------------------------
+  th_inlet_by_site:
+    title: Inlet temperature by site (°C)
+    viz: line
+    dataset: v_readings_5m
+    metrics: [avg_value]
+    groupby: [site_code]
+    filters: [[metric, ==, inlet_temp_c]]
+    time_range: Last day
+    y_format: ",.1f"
+  th_exhaust_by_site:
+    title: Exhaust temperature by site (°C)
+    viz: line
+    dataset: v_readings_5m
+    metrics: [avg_value]
+    groupby: [site_code]
+    filters: [[metric, ==, exhaust_temp_c]]
+    time_range: Last day
+    y_format: ",.1f"
+  th_inlet_heatmap:
+    title: Average inlet temperature by room and rack (°C)
+    viz: heatmap
+    dataset: v_readings_5m
+    x_axis: rack_name
+    groupby: room_name
+    metric: avg_value
+    filters: [[metric, ==, inlet_temp_c]]
+    time_range: Last day
+    format: ",.1f"
+  th_by_rack:
+    title: Inlet and exhaust by site, room and rack (last day)
+    viz: table
+    dataset: v_readings_5m
+    groupby: [site_code, room_name, rack_name]
+    metrics: [inlet_avg, inlet_max, exhaust_avg, exhaust_max, delta_t]
+    sort_by: inlet_max
+    filters: [[metric, IN, [inlet_temp_c, exhaust_temp_c]]]
+    time_range: Last day
+    row_limit: 200
+  th_hot_spots:
+    title: Hot spots — highest inlet temperature, last hour
+    viz: table
+    dataset: v_readings_5m
+    groupby: [site_code, rack_name, server_name]
+    metrics: [inlet_max, inlet_avg]
+    sort_by: inlet_max
+    filters: [[metric, ==, inlet_temp_c]]
+    time_range: 'DATEADD(DATETIME("now"), -1, hour) : now'
+    row_limit: 15
+  th_fan_rpm:
+    title: Fan speed by site (RPM)
+    viz: line
+    dataset: v_readings_5m
+    metrics: [avg_value]
+    groupby: [site_code]
+    filters: [[metric, ==, fan_rpm]]
+    time_range: Last day
+    y_format: ",.0f"
+  th_fan_by_model:
+    title: Average fan speed by model (RPM / %)
+    viz: table
+    dataset: v_readings_5m
+    groupby: [vendor, model, metric_name, unit]
+    metrics: [avg_value, max_value]
+    sort_by: avg_value
+    filters: [[metric, IN, [fan_rpm, fan_pct]]]
+    time_range: Last day
+    row_limit: 50
+
+  # ---- Power and capacity --------------------------------------------------------------------------------
+  pw_total_kw:
+    title: Total power, last hour (kW)
+    viz: big_number_total
+    dataset: v_readings_5m
+    metric: total_power_kw
+    filters: [[metric, ==, power_w]]
+    time_range: 'DATEADD(DATETIME("now"), -1, hour) : now'
+    format: ",.1f"
+  pw_peak_w:
+    title: Highest server power, last week (W)
+    viz: big_number_total
+    dataset: v_readings_1h
+    metric: peak_w
+    filters: [[metric, ==, power_w]]
+    time_range: Last week
+    format: ",.0f"
+  pw_by_site_week:
+    title: Total power draw by site, hourly (kW)
+    viz: line
+    dataset: v_readings_1h
+    metrics: [total_power_kw]
+    groupby: [site_code]
+    filters: [[metric, ==, power_w]]
+    time_range: Last week
+    time_grain: PT1H
+    y_format: ",.1f"
+  pw_by_rack:
+    title: Power draw by rack, last day (kW)
+    viz: bar
+    dataset: v_readings_5m
+    x_axis: rack_name
+    metrics: [total_power_kw]
+    groupby: [site_code]
+    stacked: true
+    filters: [[metric, ==, power_w]]
+    time_range: Last day
+    y_title: kW
+  pw_utilisation:
+    title: Rack utilisation of power capacity, last day (%)
+    viz: bar
+    dataset: v_readings_5m
+    x_axis: rack_name
+    metrics: [rack_utilisation_pct]
+    groupby: [site_code]
+    stacked: true
+    filters: [[metric, ==, power_w]]
+    time_range: Last day
+    y_title: "%"
+  pw_headroom:
+    title: Rack headroom against capacity (last day)
+    viz: table
+    dataset: v_readings_5m
+    groupby: [site_code, room_name, rack_name]
+    metrics: [total_power_kw, rack_capacity_kw, rack_headroom_kw, rack_utilisation_pct]
+    sort_by: rack_utilisation_pct
+    filters: [[metric, ==, power_w]]
+    time_range: Last day
+    row_limit: 200
+  pw_peaks:
+    title: Peak power per server, last week (W)
+    viz: table
+    dataset: v_readings_1h
+    groupby: [site_code, rack_name, server_name, model]
+    metrics: [peak_w, avg_value]
+    sort_by: peak_w
+    filters: [[metric, ==, power_w]]
+    time_range: Last week
+    row_limit: 20
+
+  # ---- Hardware health -----------------------------------------------------------------------------------
+  hw_unhealthy_parts:
+    title: Unhealthy parts
+    viz: big_number_total
+    dataset: v_server_health
+    metric: unhealthy_parts
+  hw_affected_servers:
+    title: Servers with an unhealthy part
+    viz: big_number_total
+    dataset: v_server_health
+    metric: affected_servers
+  hw_failed_parts:
+    title: Failed and degraded parts
+    viz: raw_table
+    dataset: v_server_health
+    columns: [site_code, rack_name, server_name, metric_name, component, health, state, since]
+    order_by: [[health_rank, false], [since, false]]
+    filters: [[health, IN, [Warning, Critical]]]
+    row_limit: 500
+  hw_unhealthy_by_check:
+    title: Unhealthy parts by check
+    viz: bar
+    dataset: v_server_health
+    x_axis: metric_name
+    metrics: [count]
+    groupby: [health]
+    stacked: true
+    filters: [[health, IN, [Warning, Critical]]]
+    y_title: Parts
+  hw_drive_wear:
+    title: Drive wear — lowest life left (%)
+    viz: table
+    dataset: v_readings_5m
+    groupby: [site_code, rack_name, server_name, component, model]
+    metrics: [life_left_min]
+    sort_by: life_left_min
+    sort_ascending: true
+    filters: [[metric, ==, drive_life_pct]]
+    time_range: Last day
+    row_limit: 20
+  hw_problem_models:
+    title: Top problem models
+    viz: table
+    dataset: v_server_health
+    groupby: [vendor, model]
+    metrics: [unhealthy_parts, affected_servers, servers]
+    sort_by: unhealthy_parts
+    row_limit: 20
+
+  # ---- Alerts --------------------------------------------------------------------------------------------
+  al_open:
+    title: Open alerts
+    viz: big_number_total
+    dataset: v_alerts
+    metric: open_alerts
+    time_range: No filter
+  al_median_ack:
+    title: Median time to acknowledge, last 30 days (min)
+    viz: big_number_total
+    dataset: v_alerts
+    metric: median_minutes_to_ack
+    time_range: Last month
+    format: ",.1f"
+  al_median_resolve:
+    title: Median time to resolve, last 30 days (min)
+    viz: big_number_total
+    dataset: v_alerts
+    metric: median_minutes_to_resolve
+    time_range: Last month
+    format: ",.1f"
+  al_per_day:
+    title: Alerts opened per day by severity
+    viz: bar
+    dataset: v_alerts
+    metrics: [alerts]
+    groupby: [severity]
+    stacked: true
+    time_range: Last month
+    time_grain: P1D
+    y_title: Alerts
+  al_by_site:
+    title: Alerts by site, last 30 days
+    viz: pie
+    dataset: v_alerts
+    metric: alerts
+    groupby: [site_code]
+    time_range: Last month
+  al_response:
+    title: Time to acknowledge and resolve by severity, last 30 days (min)
+    viz: table
+    dataset: v_alerts
+    groupby: [severity]
+    metrics: [alerts, median_minutes_to_ack, avg_minutes_to_ack, median_minutes_to_resolve, avg_minutes_to_resolve]
+    sort_by: alerts
+    time_range: Last month
+    row_limit: 10
+  al_noisiest:
+    title: Noisiest rules, last 30 days
+    viz: table
+    dataset: v_alerts
+    groupby: [rule_name, rule_type]
+    metrics: [alerts, occurrences]
+    sort_by: alerts
+    time_range: Last month
+    row_limit: 15
+
+  # ---- Inventory and firmware ----------------------------------------------------------------------------
+  inv_servers:
+    title: Servers
+    viz: big_number_total
+    dataset: v_inventory
+    metric: servers
+  inv_compliance:
+    title: Firmware compliance (%)
+    viz: big_number_total
+    dataset: v_firmware_compliance
+    metric: compliance_pct
+    format: ",.1f"
+  inv_off_baseline_servers:
+    title: Servers off firmware baseline
+    viz: big_number_total
+    dataset: v_firmware_compliance
+    metric: noncompliant_servers
+  inv_by_vendor:
+    title: Servers by vendor
+    viz: pie
+    dataset: v_inventory
+    metric: servers
+    groupby: [vendor]
+  inv_by_model:
+    title: Servers by model
+    viz: bar
+    dataset: v_inventory
+    x_axis: model
+    metrics: [servers]
+    groupby: [site_code]
+    stacked: true
+    y_title: Servers
+  inv_compliance_by_site:
+    title: Firmware items on and off baseline by site
+    viz: bar
+    dataset: v_firmware_compliance
+    x_axis: site_code
+    metrics: [compliant_items, noncompliant_items, no_baseline_items]
+    groupby: []
+    stacked: true
+    y_title: Firmware items
+  inv_off_baseline:
+    title: Firmware off baseline
+    viz: raw_table
+    dataset: v_firmware_compliance
+    columns: [site_code, rack_name, server_name, vendor, model, component, installed_version, approved_version, collected_at]
+    order_by: [[site_code, true], [server_name, true]]
+    filters: [[compliant, ==, false]]
+    row_limit: 500
+  inv_parts:
+    title: Parts by type and model
+    viz: table
+    dataset: v_inventory
+    groupby: [component_type, component_manufacturer, component_model]
+    metrics: [parts, servers]
+    sort_by: parts
+    filters: [[component_id, IS NOT NULL]]
+    row_limit: 100
+
+# Rows of charts: {chart_key: width} (grid of 12 columns); height in grid units (8 px each).
+dashboards:
+  - slug: dc-overview
+    title: Data center overview
+    refresh: 300
+    filter_dataset: v_server_health
+    rows:
+      - height: 25
+        charts: {ov_servers: 3, ov_critical: 3, ov_open_alerts: 3, ov_power_now: 3}
+      - height: 50
+        charts: {ov_health_by_site: 7, ov_alerts_by_severity: 5}
+      - height: 50
+        charts: {ov_inlet_by_site: 6, ov_power_by_site: 6}
+  - slug: thermal
+    title: Thermal
+    refresh: 300
+    filter_dataset: v_readings_5m
+    time_filter: true
+    rows:
+      - height: 50
+        charts: {th_inlet_by_site: 6, th_exhaust_by_site: 6}
+      - height: 60
+        charts: {th_inlet_heatmap: 12}
+      - height: 60
+        charts: {th_by_rack: 7, th_hot_spots: 5}
+      - height: 50
+        charts: {th_fan_rpm: 6, th_fan_by_model: 6}
+  - slug: power-capacity
+    title: Power and capacity
+    refresh: 900
+    filter_dataset: v_readings_5m
+    time_filter: true
+    rows:
+      - height: 25
+        charts: {pw_total_kw: 6, pw_peak_w: 6}
+      - height: 50
+        charts: {pw_by_site_week: 12}
+      - height: 50
+        charts: {pw_by_rack: 6, pw_utilisation: 6}
+      - height: 60
+        charts: {pw_headroom: 7, pw_peaks: 5}
+  - slug: hardware-health
+    title: Hardware health
+    refresh: 900
+    filter_dataset: v_server_health
+    rows:
+      - height: 25
+        charts: {hw_unhealthy_parts: 6, hw_affected_servers: 6}
+      - height: 60
+        charts: {hw_failed_parts: 12}
+      - height: 50
+        charts: {hw_unhealthy_by_check: 6, hw_problem_models: 6}
+      - height: 50
+        charts: {hw_drive_wear: 12}
+  - slug: alerts
+    title: Alerts
+    refresh: 900
+    filter_dataset: v_alerts
+    time_filter: true
+    rows:
+      - height: 25
+        charts: {al_open: 4, al_median_ack: 4, al_median_resolve: 4}
+      - height: 50
+        charts: {al_per_day: 8, al_by_site: 4}
+      - height: 50
+        charts: {al_response: 6, al_noisiest: 6}
+  - slug: inventory-firmware
+    title: Inventory and firmware
+    refresh: 86400
+    filter_dataset: v_inventory
+    rows:
+      - height: 25
+        charts: {inv_servers: 4, inv_compliance: 4, inv_off_baseline_servers: 4}
+      - height: 50
+        charts: {inv_by_vendor: 4, inv_by_model: 8}
+      - height: 50
+        charts: {inv_compliance_by_site: 5, inv_parts: 7}
+      - height: 60
+        charts: {inv_off_baseline: 12}
+
+# Health and severity words always get the same colours (DESIGN: a word and a colour, never colour alone).
+label_colors:
+  OK: "#2E9E5B"
+  Warning: "#E0A100"
+  Critical: "#D64545"
+  Unknown: "#8A8F98"
+  Info: "#3A7BD5"

@@ -1,0 +1,112 @@
+# Superset services for infra/docker-compose.yml (reference; the infra owner pastes/keeps it in sync).
+#
+# Image: build ../superset (FROM apache/superset:4.1.2 + psycopg2-binary, Authlib, flask-cors, our config,
+# bundle generator/spec and init script). One image, four services:
+#   superset-init    one-shot; `superset db upgrade` + `superset init` + /app/gcc/init_superset.py
+#                    (admin + gcc_embed users, bundle import with overwrite, GccGuest/GccEmbedService/GccSite_*
+#                    roles + RLS, embedding on the six dashboards, weekly capacity report). Idempotent.
+#   superset         web (gunicorn) on 8088, published on the host as 8090
+#   superset-worker  Celery worker (reports, cache warm-up)
+#   superset-beat    Celery beat (reports.scheduler every minute, reports.prune_log daily)
+#
+# Needs: timescaledb (databases gcc + superset_meta and roles from infra/timescale/init), redis (DBs 2/3/4),
+# migrate (reporting views must exist before the first chart query; not before import), keycloak (SSO, web
+# only), mailpit (report e-mails).
+
+x-superset-env: &superset-env
+  SUPERSET_ENV: production
+  SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY:-dev-superset-secret-key-change-me}
+  SUPERSET_METADATA_DB_URI: postgresql+psycopg2://superset_meta:${SUPERSET_META_DB_PASSWORD:-dev-superset-meta-pw}@timescaledb:5432/superset_meta
+  SUPERSET_ANALYTICS_DB_URI: postgresql+psycopg2://gcc_superset_ro:${GCC_SUPERSET_RO_DB_PASSWORD:-dev-superset-ro-pw}@timescaledb:5432/gcc
+  SUPERSET_CACHE_REDIS_URL: redis://redis:6379/2
+  SUPERSET_CELERY_BROKER_URL: redis://redis:6379/3
+  SUPERSET_RESULTS_REDIS_URL: redis://redis:6379/4
+  SUPERSET_GUEST_TOKEN_SECRET: ${SUPERSET_GUEST_TOKEN_SECRET:-dev-superset-guest-token-secret}
+  SUPERSET_PUBLIC_URL: ${SUPERSET_PUBLIC_URL:-http://localhost:8090}
+  SUPERSET_WEBDRIVER_BASEURL: http://superset:8088/
+  SUPERSET_UI_ADMIN_USERNAME: ${SUPERSET_UI_ADMIN_USERNAME:-admin}
+  SUPERSET_UI_ADMIN_PASSWORD: ${SUPERSET_UI_ADMIN_PASSWORD:-dev-superset-admin}
+  SUPERSET_EMBED_USERNAME: ${SUPERSET_ADMIN_USERNAME:-gcc_embed}
+  SUPERSET_EMBED_PASSWORD: ${SUPERSET_ADMIN_PASSWORD:-dev-superset-embed-pw}
+  # Origins allowed to frame Superset (CSP frame-ancestors) and call its API (CORS).
+  SUPERSET_EMBED_ALLOWED_ORIGINS: ${SUPERSET_EMBED_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:5173}
+  # Referrer allow-list stored on each embedded dashboard; empty = any (frame-ancestors still applies).
+  SUPERSET_EMBED_ALLOWED_DOMAINS: ${SUPERSET_EMBED_ALLOWED_DOMAINS:-}
+  SUPERSET_AUTH: ${SUPERSET_AUTH:-oauth}
+  SUPERSET_OIDC_ISSUER: ${OIDC_ISSUER:-http://localhost:8080/realms/gcc}
+  SUPERSET_OIDC_INTERNAL_URL: http://keycloak:8080/realms/gcc
+  SUPERSET_OIDC_CLIENT_ID: ${SUPERSET_OIDC_CLIENT_ID:-superset}
+  SUPERSET_OIDC_CLIENT_SECRET: ${SUPERSET_OIDC_CLIENT_SECRET:-dev-superset-oidc-secret}
+  SUPERSET_SITE_CODES: ${SUPERSET_SITE_CODES:-PNQ1,HYD1}
+  SUPERSET_REPORT_RECIPIENTS: ${SUPERSET_REPORT_RECIPIENTS:-capacity-planning@gcc.example}
+  SUPERSET_CAPACITY_REPORT_CRON: ${SUPERSET_CAPACITY_REPORT_CRON:-0 7 * * 1}
+  SMTP_HOST: ${SMTP_HOST:-mailpit}
+  SMTP_PORT: ${SMTP_PORT:-1025}
+  SMTP_MAIL_FROM: ${SUPERSET_MAIL_FROM:-superset@gcc.example}
+
+x-superset: &superset
+  build:
+    context: ../superset
+  image: gcc-superset:dev
+  restart: unless-stopped
+  environment:
+    <<: *superset-env
+  volumes:
+    - superset-home:/app/superset_home
+
+services:
+  superset-init:
+    <<: *superset
+    restart: "no"
+    command: ["/app/docker/gcc-superset-init.sh"]
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  superset:
+    <<: *superset
+    ports:
+      - "${BIND_ADDRESS:-127.0.0.1}:${SUPERSET_PORT:-8090}:8088"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://127.0.0.1:8088/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    depends_on:
+      superset-init:
+        condition: service_completed_successfully
+
+  superset-worker:
+    <<: *superset
+    command: ["celery", "--app=superset.tasks.celery_app:app", "worker", "--pool=prefork", "-O", "fair", "-c", "2", "--loglevel=INFO"]
+    healthcheck:
+      test: ["CMD-SHELL", "celery --app=superset.tasks.celery_app:app inspect ping -d celery@$$HOSTNAME --timeout 10 | grep -q pong"]
+      interval: 60s
+      timeout: 30s
+      retries: 3
+      start_period: 60s
+    depends_on:
+      superset-init:
+        condition: service_completed_successfully
+
+  superset-beat:
+    <<: *superset
+    command: ["celery", "--app=superset.tasks.celery_app:app", "beat", "--pidfile", "/tmp/celerybeat.pid", "--schedule", "/tmp/celerybeat-schedule", "--loglevel=INFO"]
+    healthcheck:
+      # beat rewrites its schedule file every few minutes; a stale file means the scheduler is stuck.
+      test: ["CMD-SHELL", "test -n \"$$(find /tmp/celerybeat-schedule* -mmin -10 2>/dev/null)\""]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+    depends_on:
+      superset-init:
+        condition: service_completed_successfully
+
+volumes:
+  superset-home:
