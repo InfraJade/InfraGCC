@@ -1,0 +1,3 @@
+# Trivy ignore list for the CI image scan (.github/workflows/ci.yml, job `images`).
+# One CVE id per line, each with a comment saying why it is accepted and until when, e.g.:
+#   CVE-2024-00000  # not reachable: we never call the affected API; revisit 2026-12-31

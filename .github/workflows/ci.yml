@@ -1,0 +1,334 @@
+# Jade GCC CI (DESIGN "CI/CD" step 1, PLAN.md Phase 7): lint, type checks, unit and adapter tests, the
+# collector <-> ingest contract, generated files up to date, image builds with a Trivy scan, dependency
+# audits and a compose config check. Deploy steps (staging on main, production on tags) are not wired yet.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  UV_PYTHON: "3.12"
+  UV_FROZEN: "1"
+  UV_HTTP_TIMEOUT: "180"
+  FORCE_COLOR: "1"
+
+jobs:
+  backend:
+    name: backend (lint, types, tests)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      timescaledb:
+        image: timescale/timescaledb:2.17.2-pg16
+        env:
+          POSTGRES_USER: gcc_owner
+          POSTGRES_PASSWORD: dev-owner-pw
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U gcc_owner -d postgres -h 127.0.0.1"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+      redis:
+        image: redis:7.4-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    env:
+      TEST_DATABASE_URL: postgresql+asyncpg://gcc_owner:dev-owner-pw@localhost:5432/postgres
+      REDIS_URL: redis://localhost:6379/0
+      CELERY_BROKER_URL: redis://localhost:6379/1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - run: uv sync --frozen
+      - run: uv run ruff check
+      - run: uv run ruff format --check
+      - run: uv run mypy
+      # Validates and ingests docs/contracts/ingest-batch.example.json (the backend side of the contract).
+      - run: uv run pytest -q
+      - name: OpenAPI contract is up to date
+        run: uv run python -m scripts.export_openapi --check
+
+  collector:
+    name: collector (lint, types, adapter + integration tests)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: collector
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: collector/uv.lock
+      - run: uv sync --frozen
+      - run: uv run ruff check
+      - run: uv run ruff format --check
+      - run: uv run mypy
+      # Adapter tests replay mockups/trees through an httpx transport; integration tests skip without a URL.
+      - run: uv run pytest -q
+      - name: Start the DMTF Redfish Mockup Server for each vendor tree
+        run: |
+          port=18011
+          for tree in dell-poweredge-r750 hpe-proliant-dl380-gen10 lenovo-thinksystem-sr650-v3; do
+            docker run -d --name "redfish-${tree}" -p "${port}:8000" \
+              -v "${GITHUB_WORKSPACE}/mockups/trees/${tree}:/mockup:ro" \
+              dmtf/redfish-mockup-server:latest -D /mockup -H 0.0.0.0 -p 8000
+            port=$((port + 1))
+          done
+          for port in 18011 18012 18013; do
+            for _ in $(seq 1 60); do
+              curl -fsS -o /dev/null "http://localhost:${port}/redfish/v1" && break
+              sleep 1
+            done
+            curl -fsS -o /dev/null "http://localhost:${port}/redfish/v1"
+          done
+      - name: Integration tests against each mockup server
+        env:
+          GCC_IT_TIMEOUT: "60"
+        run: |
+          for port in 18011 18012 18013; do
+            echo "::group::Redfish mockup on :${port}"
+            GCC_IT_REDFISH_URL="http://localhost:${port}" uv run pytest -q -m integration
+            echo "::endgroup::"
+          done
+      - name: Mockup server logs
+        if: failure()
+        run: |
+          for name in $(docker ps -a --filter name=redfish- --format '{{.Names}}'); do
+            echo "::group::${name}"; docker logs "${name}" 2>&1 | tail -n 100; echo "::endgroup::"
+          done
+
+  mockups:
+    name: mockups (simulator lint, types, tests; trees regenerate cleanly)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: mockups
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: mockups/uv.lock
+      - run: uv sync --frozen
+      - run: uv run ruff check
+      - run: uv run ruff format --check
+      - run: uv run mypy
+      - run: uv run pytest -q
+      - name: Regenerate the vendor mockup trees
+        run: uv run gcc-generate-mockups
+      - name: Trees are up to date
+        working-directory: .
+        run: |
+          git diff --stat --exit-code -- mockups/trees
+          untracked="$(git ls-files --others --exclude-standard -- mockups/trees)"
+          if [ -n "${untracked}" ]; then
+            echo "::error::gcc-generate-mockups created files that are not committed:"; echo "${untracked}"; exit 1
+          fi
+
+  contract:
+    name: contract (collector regenerates the ingest example; backend validates it)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    # The backend job validates and ingests the committed example; this job proves the collector still
+    # produces exactly that file.
+    needs: [backend, collector]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: collector/uv.lock
+      - name: Regenerate docs/contracts/ingest-batch.example.json from a real adapter run
+        working-directory: collector
+        run: |
+          uv sync --frozen
+          uv run pytest -q tests/test_contract_example.py
+      - name: Example is unchanged
+        run: git diff --exit-code -- docs/contracts/ingest-batch.example.json
+
+  frontend:
+    name: frontend (lint, types, tests, build, API types)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - name: Generated API types match docs/contracts/openapi-app.json
+        run: |
+          npm run gen:api
+          git diff --exit-code -- src/api/schema.d.ts
+
+  superset:
+    name: superset (image builds, bundle generator compiles)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Python syntax check
+        run: python -m compileall -q superset
+      - uses: docker/setup-buildx-action@v3
+      # The Dockerfile runs the bundle generator, so a bad dashboard spec fails here.
+      - uses: docker/build-push-action@v6
+        with:
+          context: superset
+          push: false
+          tags: gcc-superset:ci
+          cache-from: type=gha,scope=image-superset
+          cache-to: type=gha,mode=max,scope=image-superset
+
+  images:
+    name: image ${{ matrix.image }} (build + Trivy)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        image: [backend, collector, mockups, superset, frontend]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.image }}
+          push: false
+          load: true
+          tags: gcc-${{ matrix.image }}:ci
+          cache-from: type=gha,scope=image-${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=image-${{ matrix.image }}
+      - name: Trivy scan (CRITICAL, HIGH; fixed vulnerabilities only)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: gcc-${{ matrix.image }}:ci
+          format: table
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          vuln-type: os,library
+          exit-code: "1"
+          trivyignores: .github/.trivyignore
+
+  audit:
+    name: dependency audit (pip-audit, npm audit)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: "**/uv.lock"
+      - name: pip-audit each Python lock (runtime dependencies)
+        run: |
+          status=0
+          for project in backend collector mockups infra/loadtest; do
+            echo "::group::${project}"
+            req="${RUNNER_TEMP}/requirements-${project//\//-}.txt"
+            uv export --project "${project}" --frozen --no-dev --no-emit-project --format requirements-txt > "${req}"
+            uvx pip-audit==2.9.0 --strict --disable-pip --require-hashes -r "${req}" || status=1
+            echo "::endgroup::"
+          done
+          exit "${status}"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: npm audit (production dependencies)
+        working-directory: frontend
+        run: npm audit --omit=dev --audit-level=high
+
+  loadtest:
+    name: load test runner (lint, types, unit tests)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: infra/loadtest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: infra/loadtest/uv.lock
+      - run: uv sync --frozen
+      - run: uv run ruff check
+      - run: uv run ruff format --check
+      - run: uv run mypy
+      - run: uv run pytest -q
+
+  compose:
+    name: compose config
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: docker compose config
+        run: |
+          docker compose config -q
+          docker compose -f compose.yaml -f infra/compose.mtls.yaml config -q
+          docker compose -f compose.yaml -f infra/loadtest/compose.loadtest.yaml config -q

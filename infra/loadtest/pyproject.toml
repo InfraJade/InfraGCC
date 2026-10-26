@@ -1,0 +1,48 @@
+[project]
+name = "gcc-loadtest"
+version = "1.0.0"
+description = "500-server load test runner for the Jade GCC stack (readings/s, lag, freshness, alert delay, dashboards)"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "asyncpg>=0.30.0",
+    "httpx>=0.28.1",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.4",
+    "ruff>=0.8.4",
+    "mypy>=1.14.0",
+    "asyncpg-stubs>=0.30.0",
+]
+
+# Scripts, not a distributable package.
+[tool.uv]
+package = false
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+extend-exclude = ["reports"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "ASYNC", "S", "RUF", "PTH", "C4", "PIE", "RET"]
+ignore = [
+    "S101",   # assert is fine in tests
+    "S311",   # non-crypto random generates synthetic history
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Fixed identifiers interpolated into SQL (view names, intervals) are not injection vectors.
+"queries.py" = ["S608"]
+"tests/**" = ["S105", "S106"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unreachable = true
+files = ["runner.py", "analysis.py", "history.py", "queries.py", "tests"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

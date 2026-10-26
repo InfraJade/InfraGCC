@@ -1,0 +1,109 @@
+# Jade GCC — 500-server load test overlay (PLAN.md Phase 7, DESIGN "Load test").
+#
+#   docker compose down -v    # start from an empty database so TS_TUNE_* below take effect
+#   docker compose -f compose.yaml -f infra/loadtest/compose.loadtest.yaml up -d --build
+#   uv run --project infra/loadtest python infra/loadtest/runner.py
+#
+# Paths and variables resolve against the repo root (the first -f file). What changes from the dev stack:
+#   - the simulator serves 500 BMCs (SIM_COUNT) and raises no random faults (LOADTEST_SIM_FAULT_RATE=0), so
+#     pass/fail measures the platform, not simulated outages; the runner injects its own fault
+#   - migrate seeds the dev set (36 simulated + 3 reference BMCs) and then `seed loadtest --servers 500`,
+#     which onboards BMCs 37..500 into "Load Test Hall" racks alternating between PNQ1 and HYD1; the PNQ1
+#     pair (collector-pnq1-a / -b) splits that site's half of the fleet, collector-hyd1-a polls the other half
+#   - the dev history backfill is off: the runner backfills 30 days itself before measuring
+#   - resource limits follow DESIGN "Starting machine sizes" where a laptop allows it
+#
+# Machine: 8+ CPU threads and 16 GB RAM given to Docker (the database alone is capped at 4 CPUs / 6 GB).
+
+x-limits-collector: &limits-collector
+  deploy:
+    resources:
+      limits:
+        cpus: "2"
+        memory: 4g
+
+services:
+  timescaledb:
+    command: ["postgres", "-c", "max_connections=300"]
+    shm_size: 1gb
+    environment:
+      TS_TUNE_MEMORY: ${LOADTEST_TS_TUNE_MEMORY:-4GB}
+      TS_TUNE_NUM_CPUS: ${LOADTEST_TS_TUNE_NUM_CPUS:-4}
+    deploy:
+      resources:
+        limits:
+          cpus: "4"
+          memory: 6g
+
+  redis:
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1g
+
+  migrate:
+    command:
+      - sh
+      - -c
+      - alembic upgrade head && python -m app.seed dev && python -m app.seed loadtest --servers ${LOADTEST_SERVERS:-500}
+    environment:
+      SEED_SIM_SERVERS: "36"
+
+  ingest-api:
+    # DESIGN: 2 replicas x 1 vCPU / 2 GB. Two uvicorn workers in one container stand in for the replicas.
+    command: ["uvicorn", "app.ingest.main:app", "--host", "0.0.0.0", "--port", "8001", "--proxy-headers", "--workers", "2"]
+    environment:
+      DB_POOL_SIZE: "10"
+      DB_MAX_OVERFLOW: "10"
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 4g
+
+  app-api:
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 4g
+
+  alert-worker:
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 2g
+
+  scheduler:
+    environment:
+      DEV_BACKFILL_ENABLED: "false"
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 2g
+
+  bmc-simulator:
+    environment:
+      SIM_COUNT: ${LOADTEST_SERVERS:-500}
+      SIM_FAULT_RATE: ${LOADTEST_SIM_FAULT_RATE:-0}
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 4g
+
+  collector-pnq1-a:
+    <<: *limits-collector
+
+  collector-pnq1-b:
+    <<: *limits-collector
+
+  collector-hyd1-a:
+    <<: *limits-collector
