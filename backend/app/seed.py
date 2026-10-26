@@ -310,15 +310,21 @@ async def seed_dev() -> None:
     log.info("dev seed complete (%d simulated servers added)", added)
 
 
-async def seed_loadtest(servers: int) -> None:
-    """Add a load-test hall per site with enough racks for `servers` 1U/2U servers (13 per 42U rack)."""
+async def seed_loadtest(servers: int, site_code: str | None = None) -> None:
+    """Add a load-test hall with enough racks for `servers` 1U/2U servers (13 per 42U rack).
+
+    Racks alternate between the two sites, or all go to `site_code`, so that site's collector pair polls the
+    whole load-test fleet (the design's "one collector pair handles 500 servers").
+    """
     async with session_scope() as session:
         await seed_topology(session)
         per_rack = 13
         racks_needed = -(-servers // per_rack)
-        racks_by_site: dict[str, list[Rack]] = {"PNQ1": [], "HYD1": []}
+        racks_by_site: dict[str, list[Rack]] = {
+            code: [] for code in ([site_code] if site_code else ["PNQ1", "HYD1"])
+        }
         for idx in range(racks_needed):
-            code = "PNQ1" if idx % 2 == 0 else "HYD1"
+            code = site_code or ("PNQ1" if idx % 2 == 0 else "HYD1")
             site = (await session.execute(select(Site).where(Site.code == code))).scalar_one()
             room = (
                 await session.execute(
@@ -361,6 +367,9 @@ def main() -> None:
     sub.add_parser("dev", help="seed the local development data set")
     lt = sub.add_parser("loadtest", help="onboard N simulated servers")
     lt.add_argument("--servers", type=int, default=500)
+    lt.add_argument(
+        "--site", choices=[code for code, *_ in SITES], help="put every load-test rack at one site"
+    )
     args = parser.parse_args()
 
     async def run() -> None:
@@ -368,7 +377,7 @@ def main() -> None:
             if args.command == "dev":
                 await seed_dev()
             else:
-                await seed_loadtest(args.servers)
+                await seed_loadtest(args.servers, args.site)
         finally:
             await dispose_engine()
 

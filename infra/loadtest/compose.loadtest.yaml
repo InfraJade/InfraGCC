@@ -46,7 +46,7 @@ services:
     command:
       - sh
       - -c
-      - alembic upgrade head && python -m app.seed dev && python -m app.seed loadtest --servers ${LOADTEST_SERVERS:-500}
+      - alembic upgrade head && python -m app.seed dev && python -m app.seed loadtest --servers ${LOADTEST_SERVERS:-500} --site ${LOADTEST_SITE:-PNQ1}
     environment:
       SEED_SIM_SERVERS: "36"
 

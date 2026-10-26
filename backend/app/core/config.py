@@ -84,7 +84,7 @@ class Settings(BaseSettings):
     rate_limit_per_minute: int = 600
 
     # Dev conveniences
-    dev_backfill_days: int = 7
+    dev_backfill_days: float = Field(default=7.0, gt=0)  # fractional for tests
     dev_backfill_enabled: bool = True
 
     @property
