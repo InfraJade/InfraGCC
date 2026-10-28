@@ -1,0 +1,38 @@
+#!/bin/sh
+# Sourced by the nginx image entrypoint before templates are rendered (.envsh files are sourced, so the
+# exports below reach 20-envsubst-on-templates.sh). Writes /config.js for the SPA and derives the origins
+# that the CSP in nginx.conf needs. Do not use `set -e` here: it would leak into the entrypoint shell.
+
+gcc_origin() {
+  # scheme://host[:port] of a URL, or empty
+  printf '%s' "$1" | sed -nE 's#^([A-Za-z][A-Za-z0-9+.-]*://[^/?#]+).*#\1#p'
+}
+
+gcc_js() {
+  # escape for a double-quoted JS string; "<" escaped so a value can never close the script
+  printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g' -e 's/</\\u003c/g'
+}
+
+GCC_HTML_ROOT=/usr/share/nginx/html
+cat > "$GCC_HTML_ROOT/config.js" <<EOF
+// Generated at container start from the environment. Do not edit.
+window.__GCC_CONFIG__ = {
+  "oidcAuthority": "$(gcc_js "${OIDC_AUTHORITY:-}")",
+  "oidcClientId": "$(gcc_js "${OIDC_CLIENT_ID:-}")",
+  "supersetUrl": "$(gcc_js "${SUPERSET_URL:-}")",
+  "apiBase": "$(gcc_js "${API_BASE:-}")"
+};
+EOF
+
+GCC_OIDC_ORIGIN="$(gcc_origin "${OIDC_AUTHORITY:-}")"
+GCC_SUPERSET_ORIGIN="$(gcc_origin "${SUPERSET_URL:-}")"
+GCC_API_ORIGIN="$(gcc_origin "${API_BASE:-}")"
+if [ -n "$GCC_API_ORIGIN" ]; then
+  GCC_API_CONNECT="$GCC_API_ORIGIN $(printf '%s' "$GCC_API_ORIGIN" | sed 's#^http#ws#')"
+else
+  GCC_API_CONNECT=""
+fi
+GCC_API_UPSTREAM="${API_UPSTREAM:-http://app-api:8000}"
+export GCC_OIDC_ORIGIN GCC_SUPERSET_ORIGIN GCC_API_CONNECT GCC_API_UPSTREAM
+
+echo "05-gcc-config: wrote $GCC_HTML_ROOT/config.js (oidc=${GCC_OIDC_ORIGIN:-none}, superset=${GCC_SUPERSET_ORIGIN:-none}, api upstream=$GCC_API_UPSTREAM)"
