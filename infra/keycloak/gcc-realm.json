@@ -1,6 +1,7 @@
 {
   "realm": "gcc",
   "displayName": "Jade GCC Monitoring",
+  "loginTheme": "gcc",
   "enabled": true,
   "sslRequired": "external",
   "registrationAllowed": false,

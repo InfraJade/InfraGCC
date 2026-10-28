@@ -34,7 +34,7 @@ value to open browsers → Superset sees it in the next 5-minute rollup.
 ## Prerequisites
 
 - Docker Desktop (or Docker Engine + Compose v2.24+) with **at least 8 GB RAM** and ~10 GB disk for images.
-- Free host ports 3000, 8000, 8001, 8025, 8080, 8090, 9100, 5433 (all overridable, see `.env.example`).
+- Free host ports 3000, 8000, 8001, 8025, 8080, 8090, 9100, 15433 (all overridable, see `.env.example`).
 - For development outside containers: [uv](https://docs.astral.sh/uv/) (provides Python 3.12) and Node 20+.
 
 ## Start
@@ -62,7 +62,7 @@ with `docker compose down -v`.
 | Superset | http://localhost:8090 | `admin` / `dev-superset-admin`, or SSO as `analyst` / `admin` |
 | Mailpit (alert email) | http://localhost:8025 | — |
 | BMC simulator control API | http://localhost:9100 | — |
-| TimescaleDB | `localhost:5433`, database `gcc` | `gcc_owner` / `dev-owner-pw` |
+| TimescaleDB | `localhost:15433`, database `gcc` | `gcc_owner` / `dev-owner-pw` |
 
 Demo users (realm `gcc`, password **`demo1234`** for all):
 
@@ -84,7 +84,7 @@ Roles and site limits come from Keycloak groups (`gcc-<role>`, `gcc-site-<CODE>`
 |---|---|
 | `timescaledb` | PostgreSQL 16 + TimescaleDB: app database `gcc` (hypertable, rollups, reporting views), plus `superset_meta` and `keycloak` databases. Least-privilege roles created by `infra/timescale/init`. |
 | `redis` | Live pub/sub (`gcc:live`), rate limits, backend Celery broker; Superset cache and Celery on DBs 2–4. Not published to the host. |
-| `keycloak` | OIDC provider; imports `infra/keycloak/gcc-realm.json` on first start. |
+| `keycloak` | OIDC provider; imports `infra/keycloak/gcc-realm.json` on first start. Sign-in pages use the Jade GCC theme in `infra/keycloak/themes/gcc` (edits show on reload in dev). |
 | `migrate` | One-shot: `alembic upgrade head` and the idempotent dev seed (2 sites, 4 rooms, 12 racks, 3 collectors, 36 simulated + 3 reference servers, alert routes, baselines). |
 | `ingest-api` | Collector API: `/ingest/v1/config`, `/batches`, `/heartbeat`. Token auth in dev, client-certificate identity in prod. |
 | `app-api` | REST API for the web app, WebSocket live updates, Superset guest tokens. |
@@ -99,6 +99,20 @@ Roles and site limits come from Keycloak groups (`gcc-<role>`, `gcc-site-<CODE>`
 
 Fault injection: use the simulator control API on http://localhost:9100 (see `mockups/`) and watch the alert
 appear in the app, in Mailpit and at the Teams sink.
+
+## Demo mode
+
+**Settings → Demo mode** switches the whole web app to a built-in sample data set: 3 sites, about 60 Dell, HPE
+and Lenovo servers, and ready-made faults (failed PSU, slow fan, hot aisle, worn drive, unreachable BMC, offline
+collector, off-baseline firmware), plus alert history, rules, routes, maintenance windows, users and an audit trail.
+A "Demo data" badge shows in the top bar while it is on.
+
+- Every `/api/v1` call and the live feed are answered in the browser (`frontend/src/demo/`); nothing is sent
+  to the backend, and Analytics shows in-app charts instead of Superset.
+- Per browser (localStorage), so other users are unaffected. Sign-in still uses Keycloak, and roles and site
+  limits apply to the demo data as they would to real data.
+- Changes (acknowledging, editing, onboarding) last until the page is reloaded; **Reset demo data** in
+  Settings restores the original set.
 
 ## Onboarding a real BMC
 

@@ -55,8 +55,8 @@ from history import PROFILES, ensure_history
 from queries import QUERIES, DashboardQuery
 
 HERE = Path(__file__).resolve().parent
-DEFAULT_DB_URL = "postgresql://gcc_owner:dev-owner-pw@localhost:5433/gcc"
-DEFAULT_RO_DB_URL = "postgresql://gcc_superset_ro:dev-superset-ro-pw@localhost:5433/gcc"
+DEFAULT_DB_URL = "postgresql://gcc_owner:dev-owner-pw@localhost:15433/gcc"
+DEFAULT_RO_DB_URL = "postgresql://gcc_superset_ro:dev-superset-ro-pw@localhost:15433/gcc"
 DEFAULT_SIM_URL = "http://localhost:9100"
 # Grace after the window so batches already polled (collector batch interval 12 s) reach the database.
 INGEST_GRACE_S = 30.0

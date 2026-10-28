@@ -53,8 +53,8 @@ uv run --project infra/loadtest python infra/loadtest/runner.py --quick
 
 # dashboard timing only, against any database with the schema (e.g. a scratch copy)
 uv run --project infra/loadtest python infra/loadtest/runner.py --skip-live \
-  --db-url postgresql://gcc_owner:dev-owner-pw@localhost:5433/gcc \
-  --ro-db-url postgresql://gcc_superset_ro:dev-superset-ro-pw@localhost:5433/gcc
+  --db-url postgresql://gcc_owner:dev-owner-pw@localhost:15433/gcc \
+  --ro-db-url postgresql://gcc_superset_ro:dev-superset-ro-pw@localhost:15433/gcc
 ```
 
 Reports go to `infra/loadtest/reports/<UTC timestamp>.md` and `.json` (git-ignored). The exit code is 1 if

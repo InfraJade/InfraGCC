@@ -119,8 +119,11 @@ them to logs. The client sends `{"type":"auth","token":…}` as its first messag
 specifies a glassmorphism design system with Tailwind and a named component set, which a heavy component library
 would fight. ECharts (doc lists ECharts or Recharts) for charts; `oidc-client-ts` for sign-in.
 
-**D25. Placeholder logo.** No logo file was provided; `frontend/src/assets/logo.svg` is a simple mark in the brand
-colours. Replace it with the official asset.
+**D25. Logo.** The official lockup is `frontend/src/assets/logo.jpeg` (illustration + "JADE GLOBAL | GCC", on white).
+It is shown whole where there is room (login, wall mode). The sidebar, favicon and touch icon use
+`logo-mark.png` / `public/favicon.png` / `public/apple-touch-icon.png`, square crops of its illustration, because
+the full lockup is unreadable at 28 px. The asset has a white background, so on dark surfaces it sits on a white
+rounded plate. Regenerate the crops whenever `logo.jpeg` changes.
 
 ## Simulated hardware
 
